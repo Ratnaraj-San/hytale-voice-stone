@@ -28,7 +28,7 @@ public final class LinkCommand extends CommandBase {
     private final RequiredArg<PlayerRef> playerArg;
 
     public LinkCommand(HytaleLogger logger, HeldStoneTracker tracker) {
-        super("voicestone");
+        super("voicestone", "commands.voicestone.desc");
         this.logger = logger;
         this.tracker = tracker;
         this.playerArg = withRequiredArg("player", "commands.voicestone.player.desc", ArgTypes.PLAYER_REF);

@@ -4,3 +4,4 @@ items.Voice_Stone_Zephyr.name = Pierre de voix en zéphyr
 items.Voice_Stone_Sapphire.name = Pierre de voix en saphir
 items.Voice_Stone_Ruby.name = Pierre de voix en rubis
 commands.voicestone.player.desc = Le joueur a lier ou delier
+commands.voicestone.desc = Bascule le lien de votre pierre de voix vers un joueur
