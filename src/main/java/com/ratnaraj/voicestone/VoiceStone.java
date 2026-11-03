@@ -33,7 +33,7 @@ public class VoiceStone extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker));
 
-        getCommandRegistry().registerCommand(new LinkCommand(getLogger(), heldStoneTracker));
+        getCommandRegistry().registerCommand(new VoiceStoneCommand(getLogger(), heldStoneTracker));
 
         registerEvents(heldStoneTracker);
 

@@ -5,3 +5,6 @@ items.Voice_Stone_Sapphire.name = Sapphire Voice Stone
 items.Voice_Stone_Ruby.name = Ruby Voice Stone
 commands.voicestone.player.desc = The player to link or unlink
 commands.voicestone.desc = Toggle the link of your held Voice Stone to a player
+commands.voicestone.add.desc = Link a player to your held Voice Stone
+commands.voicestone.remove.desc = Unlink a player from your held Voice Stone
+commands.voicestone.list.desc = List the players linked to your held Voice Stone
