@@ -6,7 +6,7 @@
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Emerald.png",
   "Model": "Resources/VoiceStone/Voice_Stone.blockymodel",
   "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
-  "PlayerAnimationsId": "Torch",
+  "PlayerAnimationsId": "Item",
   "MaxStack": 1,
   "Utility": {
     "Usable": true
