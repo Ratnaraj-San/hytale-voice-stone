@@ -25,7 +25,6 @@ public class VoiceStone extends JavaPlugin {
     }
 
     private Registration voiceInterceptorRegistration;
-    private BroadcastRouter broadcastRouter;
 
     @Override
     protected void setup() {
@@ -48,7 +47,7 @@ public class VoiceStone extends JavaPlugin {
             return;
         }
 
-        broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker, getLogger());
+        BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
         voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter));
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
@@ -58,10 +57,6 @@ public class VoiceStone extends JavaPlugin {
     public void shutdown() {
         if (voiceInterceptorRegistration != null) {
             voiceInterceptorRegistration.unregister();
-        }
-
-        if (broadcastRouter != null) {
-            broadcastRouter.closeAll();
         }
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin disabled!");

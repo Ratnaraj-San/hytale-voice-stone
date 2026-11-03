@@ -1,19 +1,16 @@
 package com.ratnaraj.voicestone;
 
-import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.Position;
+import com.hypixel.hytale.protocol.packets.stream.StreamType;
+import com.hypixel.hytale.protocol.packets.voice.RelayedVoiceData;
 import com.hypixel.hytale.server.core.modules.voice.PlayerVoiceFrame;
-import com.hypixel.hytale.server.core.modules.voice.PositionalVoiceSpeaker;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
-import org.joml.Vector3d;
+import com.hypixel.hytale.server.core.universe.Universe;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
 /**
  * Routes the voice of a stone-holding speaker to every other stone holder,
@@ -21,27 +18,32 @@ import java.util.logging.Level;
  * no links). The speaker's original proximity delivery is kept for
  * bystanders; stone holders are excluded from it so they never hear the
  * same voice twice.
+ *
+ * <p>Delivery is hand-crafted {@link RelayedVoiceData} packets rather than
+ * native {@code PositionalVoiceSpeaker}s: the native positional speaker is
+ * anonymous by design (entityId = 0, shown as "Unknown" in the client's
+ * talking indicator), while a hand-built packet can carry the speaker's
+ * identity. Packets are delivered to the stone holder AND to anyone
+ * physically near their stone, which reimplements the native proximity
+ * routing and preserves the designed leak: anyone near a playing stone
+ * overhears it.
+ *
+ * <p>Identity follows the native semantics exactly (verified against
+ * {@code PlayerVoiceFrame.speakerId()}): the packet's speakerId is the
+ * speaker's player UUID, resolved by the client from its player list at any
+ * distance, and the entityId is the speaker's network entity id, which
+ * carries the in-world talking indicator when the entity is loaded for the
+ * receiver. The router is stateless: one packet per frame per (speaker,
+ * listener) pair, no stream bookkeeping.
  */
 public final class BroadcastRouter {
 
-    /**
-     * One audio stream per (speaker, listener) pair. Two speakers talking to
-     * the same listener must not share one stream, or their Opus frames
-     * interleave into corrupted audio.
-     */
-    private record SpeakerKey(UUID speaker, UUID listener) {
-    }
-
     private final VoiceModule voiceModule;
     private final HeldStoneTracker tracker;
-    private final HytaleLogger logger;
-    private final Map<SpeakerKey, PositionalVoiceSpeaker> speakers = new ConcurrentHashMap<>();
 
-    public BroadcastRouter(VoiceModule voiceModule, HeldStoneTracker tracker, HytaleLogger logger) {
+    public BroadcastRouter(VoiceModule voiceModule, HeldStoneTracker tracker) {
         this.voiceModule = voiceModule;
         this.tracker = tracker;
-        this.logger = logger;
-        tracker.addStoneReleasedCallback(this::onStoneReleased);
     }
 
     /**
@@ -49,87 +51,105 @@ public final class BroadcastRouter {
      * thread of the speaking player.
      */
     public void onFrame(PlayerVoiceFrame frame) {
+        // Never call frame.drop() here so bystanders keep hearing the speaker.
         UUID speaker = frame.speaker().getUuid();
 
-        if (!tracker.isHoldingStone(speaker)) { return; }
-
-        // Never call frame.drop() here so bystanders keep hearing the speaker.
-        tracker.getHolders().forEach(listener -> {
-            if (listener.equals(speaker)) { return; }
-
-            var snapshot = voiceModule.getCachedPosition(listener);
-
-            if (snapshot == null) { return; }
-
-            PositionalVoiceSpeaker stone = getOrCreateSpeaker(speaker, listener);
-
-            if (stone == null) { return; }
-
-            frame.excludeListener(listener);
-            stone.setPosition(new Vector3d(snapshot.position()));
-            stone.pushOpus(frame.opus());
-        });
-    }
-
-    private PositionalVoiceSpeaker getOrCreateSpeaker(UUID speaker, UUID listener) {
-        PlayerRef listenerRef = tracker.getPlayerRef(listener);
-        var snapshot = voiceModule.getCachedPosition(listener);
-
-        if (listenerRef == null || snapshot == null) {
-            return null;
+        if (!tracker.isHoldingStone(speaker)) {
+            return;
         }
 
-        World world = listenerRef.getReference().getStore().getExternalData().getWorld();
-        Vector3d position = new Vector3d(snapshot.position());
+        if (voiceModule.isPlayerMuted(speaker)) {
+            return;
+        }
 
-        return speakers.computeIfAbsent(
-                new SpeakerKey(speaker, listener),
-                key -> {
-                    logger.at(Level.INFO).log(
-                            "[VoiceStone] opened speaker %s -> %s at (%.1f, %.1f, %.1f)",
-                            tracker.getPlayerRef(speaker).getUsername(),
-                            listenerRef.getUsername(),
-                            position.x(), position.y(), position.z());
-                    return voiceModule.openPositionalVoice(world, position);
-                });
+        VoiceModule.PositionSnapshot speakerSnapshot = voiceModule.getCachedPosition(speaker);
+        if (speakerSnapshot == null) {
+            return;
+        }
+
+        for (UUID listener : tracker.getHolders()) {
+            if (listener.equals(speaker)) {
+                continue;
+            }
+
+            VoiceModule.PositionSnapshot listenerSnapshot = voiceModule.getCachedPosition(listener);
+            if (listenerSnapshot == null) {
+                continue;
+            }
+
+            frame.excludeListener(listener);
+
+            deliverFrame(frame, speaker, speakerSnapshot, listenerSnapshot);
+        }
     }
 
     /**
-     * Release callback from the tracker: the player stopped being a stone
-     * holder (released, disconnected). Closes every speaker involving them,
-     * in either role — as a listener we were routing to, as a speaker we
-     * were routing from.
+     * Builds the relay packet for one (speaker, listener) pair: the audio is
+     * positioned at the listener's stone, speakerId is the speaker's player
+     * UUID (identity at any distance) and entityId their network entity id
+     * (in-world indicator when loaded). Delivered to everyone near the
+     * stone, not just the holder — that is the leak.
      */
-    private void onStoneReleased(UUID player) {
-        List<SpeakerKey> toRemove = new ArrayList<>();
+    private void deliverFrame(
+            PlayerVoiceFrame frame,
+            UUID speaker,
+            VoiceModule.PositionSnapshot speakerSnapshot,
+            VoiceModule.PositionSnapshot listenerSnapshot) {
 
-        for (SpeakerKey key : speakers.keySet()) {
-            if (key.speaker().equals(player) || key.listener().equals(player)) {
-                toRemove.add(key);
+        Position stonePosition = new Position();
+        stonePosition.x = listenerSnapshot.position().x();
+        stonePosition.y = listenerSnapshot.position().y();
+        stonePosition.z = listenerSnapshot.position().z();
+
+        RelayedVoiceData packet = new RelayedVoiceData(
+                speaker,
+                speakerSnapshot.networkId(),
+                frame.sequenceNumber(),
+                frame.timestamp(),
+                stonePosition,
+                speakerSnapshot.isUnderwater(),
+                frame.opus());
+
+        for (UUID near : nearbyPlayers(listenerSnapshot)) {
+            if (near.equals(speaker)) {
+                continue;
             }
-        }
 
-        for (SpeakerKey key : toRemove) {
-            PositionalVoiceSpeaker speaker = speakers.remove(key);
-
-            if (speaker != null) {
-                speaker.close();
+            PlayerRef player = Universe.get().getPlayer(near);
+            if (player == null) {
+                continue;
             }
-        }
 
-        if (!toRemove.isEmpty()) {
-            logger.at(Level.INFO).log("[VoiceStone] closed %d speaker(s) for player %s", toRemove.size(), player);
+            var channel = player.getPacketHandler().getChannel(StreamType.Voice);
+            if (channel.isActive()) {
+                channel.writeAndFlush(packet);
+            }
         }
     }
 
-    /** Closes every speaker */
-    public void closeAll() {
-        List<PositionalVoiceSpeaker> toClose = new ArrayList<>(speakers.values());
+    /**
+     * Players in the same world as the stone and within the module's hearing
+     * distance of it — the same selection the native router applies around a
+     * positional speaker. The stone holder is at distance zero, always in.
+     */
+    private Set<UUID> nearbyPlayers(VoiceModule.PositionSnapshot stone) {
+        double maxDistanceSquared = squared(voiceModule.getMaxHearingDistance());
+        UUID worldId = stone.worldId();
 
-        speakers.clear();
-
-        for (PositionalVoiceSpeaker speaker : toClose) {
-            speaker.close();
+        Set<UUID> nearby = new HashSet<>();
+        for (UUID uuid : voiceModule.getPlayerStates().keySet()) {
+            VoiceModule.PositionSnapshot position = voiceModule.getCachedPosition(uuid);
+            if (position == null || !position.worldId().equals(worldId)) {
+                continue;
+            }
+            if (position.position().distanceSquared(stone.position()) <= maxDistanceSquared) {
+                nearby.add(uuid);
+            }
         }
+        return nearby;
+    }
+
+    private static double squared(double value) {
+        return value * value;
     }
 }
