@@ -1,0 +1,22 @@
+{
+    "Group": "Ratnaraj",
+    "Name": "Voice Stone",
+    "Version": "1.0.0",
+    "Description": "Hold a Voice Stone to hear linked players through it, as if they were standing on your stone. Crouch + right-click a player to link your stone to them.",
+    "Authors": [
+        {
+            "Name": "Ratnaraj"
+        }
+    ],
+    "Website": "",
+    "ServerVersion": ">=0.7.5 <0.8.0",
+    "Dependencies": {
+        
+    },
+    "OptionalDependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "com.ratnaraj.voicestone.VoiceStone",
+    "IncludesAssetPack": true
+}
