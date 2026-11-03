@@ -3,3 +3,4 @@ items.Voice_Stone_Emerald.description = A magical stone that carries voices both
 items.Voice_Stone_Zephyr.name = Zephyr Voice Stone
 items.Voice_Stone_Sapphire.name = Sapphire Voice Stone
 items.Voice_Stone_Ruby.name = Ruby Voice Stone
+commands.voicestone.player.desc = The player to link or unlink

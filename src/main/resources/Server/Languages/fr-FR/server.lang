@@ -3,3 +3,4 @@ items.Voice_Stone_Emerald.description = Une pierre magique qui porte les voix da
 items.Voice_Stone_Zephyr.name = Pierre de voix en zéphyr
 items.Voice_Stone_Sapphire.name = Pierre de voix en saphir
 items.Voice_Stone_Ruby.name = Pierre de voix en rubis
+commands.voicestone.player.desc = Le joueur a lier ou delier

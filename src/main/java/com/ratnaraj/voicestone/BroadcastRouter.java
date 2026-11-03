@@ -3,40 +3,45 @@ package com.ratnaraj.voicestone;
 import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.packets.stream.StreamType;
 import com.hypixel.hytale.protocol.packets.voice.RelayedVoiceData;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.voice.PlayerVoiceFrame;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * Routes the voice of a stone-holding speaker to every other stone holder,
- * played positionally from each listener's own stone (M4 broadcast mode,
- * no links). The speaker's original proximity delivery is never touched:
- * physical hearing always works normally for everyone, and a stone holder
- * standing next to a stone-holding speaker hears them both physically and
- * through their own stone — preventing that double-hearing is the players'
- * business, not the plugin's (decided).
+ * Routes the voice of a stone-holding speaker through the listeners' own
+ * stones, positionally: the audio plays from the listener's stone, as if
+ * the stone were the speaker. Two modes, decided in M5:
+ *
+ * <p>Links on the speaker's stone (targeted routing): the voice plays from
+ * the linked players' stones, and nowhere else in the stone network. A
+ * mutual link routes privately (delivered to the linked listener only); a
+ * one-way link keeps the designed positional leak: anyone physically near
+ * the linked listener's stone overhears. A linked player who holds no
+ * stone hears nothing through any stone (the stone is the playback
+ * device, decided). The speaker's own proximity delivery is never
+ * touched — the plugin never alters the base voice chat (decided).
+ *
+ * <p>No links on the speaker's stone (broadcast): the voice plays from the
+ * stone of every holder whose stone accepts this speaker — an unlinked
+ * stone hears every broadcast, a linked stone hears only its linked
+ * players (decided reception filter). The speaker's original proximity
+ * delivery is never touched in this mode: physical hearing always works
+ * for everyone.
  *
  * <p>Delivery is hand-crafted {@link RelayedVoiceData} packets rather than
- * native {@code PositionalVoiceSpeaker}s: the native positional speaker is
- * anonymous by design (entityId = 0, shown as "Unknown" in the client's
- * talking indicator), while a hand-built packet can carry the speaker's
- * identity. Packets are delivered to the stone holder AND to anyone
- * physically near their stone, which reimplements the native proximity
- * routing and preserves the designed leak: anyone near a playing stone
- * overhears it.
- *
- * <p>Identity follows the native semantics exactly (verified against
- * {@code PlayerVoiceFrame.speakerId()}): the packet's speakerId is the
- * speaker's player UUID, resolved by the client from its player list at any
- * distance, and the entityId is the speaker's network entity id, which
- * carries the in-world talking indicator when the entity is loaded for the
- * receiver. The router is stateless: one packet per frame per (speaker,
- * listener) pair, no stream bookkeeping.
+ * native speakers: a hand-built packet carries the speaker's identity
+ * (M4.1). The opus bytes, sequence and timestamp are extracted from the
+ * frame once and passed explicitly to the packet builder. The router
+ * never calls drop() — decided: the Voice Stone must not alter the base
+ * voice chat in any mode. The router is stateless: one packet per frame
+ * per (speaker, listener) pair, no stream bookkeeping.
  */
 public final class BroadcastRouter {
 
@@ -53,10 +58,10 @@ public final class BroadcastRouter {
      * thread of the speaking player.
      */
     public void onFrame(PlayerVoiceFrame frame) {
-        // Never call frame.drop() here so bystanders keep hearing the speaker.
         UUID speaker = frame.speaker().getUuid();
 
-        if (!tracker.isHoldingStone(speaker)) {
+        ItemStack speakerStone = tracker.getHeldStone(speaker);
+        if (speakerStone == null) {
             return;
         }
 
@@ -69,8 +74,89 @@ public final class BroadcastRouter {
             return;
         }
 
+        byte[] opus = frame.opus();
+        short sequence = frame.sequenceNumber();
+        int timestamp = frame.timestamp();
+
+        List<UUID> links = StoneLinks.get(speakerStone);
+
+        if (!links.isEmpty()) {
+            routeToLinks(opus, sequence, timestamp, speaker, speakerSnapshot, links);
+        } else {
+            routeBroadcast(opus, sequence, timestamp, speaker, speakerSnapshot);
+        }
+    }
+
+    /**
+     * Targeted routing: the speaker's stone has links, the voice plays from
+     * the linked players' stones — and nowhere else in the stone network.
+     * The frame's own proximity delivery is left fully untouched: the
+     * Voice Stone never alters the base voice chat (decided), so the
+     * speaker is still heard normally by anyone physically near them; the
+     * client's speakerId+sequence dedup keeps a linked listener standing
+     * next to the speaker from hearing them twice.
+     */
+    private void routeToLinks(
+            byte[] opus,
+            short sequence,
+            int timestamp,
+            UUID speaker,
+            VoiceModule.PositionSnapshot speakerSnapshot,
+            List<UUID> links) {
+
+        for (UUID linked : links) {
+            ItemStack listenerStone = tracker.getHeldStone(linked);
+
+            if (listenerStone == null) {
+                continue;
+            }
+
+            VoiceModule.PositionSnapshot listenerSnapshot = voiceModule.getCachedPosition(linked);
+            if (listenerSnapshot == null) {
+                continue;
+            }
+
+            RelayedVoiceData packet = buildPacket(
+                    opus, sequence, timestamp, speaker, speakerSnapshot, listenerSnapshot);
+
+            Set<UUID> recipients = new HashSet<>();
+
+            if (StoneLinks.isMutual(listenerStone, speaker)) {
+                recipients.add(linked);
+            } else {
+                recipients.addAll(nearbyPlayers(listenerSnapshot));
+            }
+
+            recipients.remove(speaker);
+
+            deliver(packet, recipients);
+        }
+    }
+
+    /**
+     * Broadcast routing: the speaker's stone has no links, the voice plays
+     * from the stone of every holder whose stone accepts this speaker. The
+     * speaker's original proximity delivery is never touched here.
+     */
+    private void routeBroadcast(
+            byte[] opus,
+            short sequence,
+            int timestamp,
+            UUID speaker,
+            VoiceModule.PositionSnapshot speakerSnapshot) {
+
         for (UUID listener : tracker.getHolders()) {
             if (listener.equals(speaker)) {
+                continue;
+            }
+
+            ItemStack listenerStone = tracker.getHeldStone(listener);
+
+            if (listenerStone == null) {
+                continue;
+            }
+
+            if (!StoneLinks.receivesBroadcast(listenerStone, speaker)) {
                 continue;
             }
 
@@ -79,7 +165,13 @@ public final class BroadcastRouter {
                 continue;
             }
 
-            deliverFrame(frame, speaker, speakerSnapshot, listenerSnapshot);
+            RelayedVoiceData packet = buildPacket(
+                    opus, sequence, timestamp, speaker, speakerSnapshot, listenerSnapshot);
+
+            Set<UUID> recipients = new HashSet<>(nearbyPlayers(listenerSnapshot));
+            recipients.remove(speaker);
+
+            deliver(packet, recipients);
         }
     }
 
@@ -91,11 +183,12 @@ public final class BroadcastRouter {
      * the listener's world: network entity ids are per-world, so cross-world
      * the client would resolve the id to an unrelated entity of the
      * receiver's own world (observed: the listener seeing themselves as the
-     * speaker). Delivered to everyone near the stone, not just the holder —
-     * that is the leak.
+     * speaker).
      */
-    private void deliverFrame(
-            PlayerVoiceFrame frame,
+    private RelayedVoiceData buildPacket(
+            byte[] opus,
+            short sequence,
+            int timestamp,
             UUID speaker,
             VoiceModule.PositionSnapshot speakerSnapshot,
             VoiceModule.PositionSnapshot listenerSnapshot) {
@@ -109,21 +202,25 @@ public final class BroadcastRouter {
                 ? speakerSnapshot.networkId()
                 : 0;
 
-        RelayedVoiceData packet = new RelayedVoiceData(
+        return new RelayedVoiceData(
                 speaker,
                 entityId,
-                frame.sequenceNumber(),
-                frame.timestamp(),
+                sequence,
+                timestamp,
                 stonePosition,
                 speakerSnapshot.isUnderwater(),
-                frame.opus());
+                opus);
+    }
 
-        for (UUID near : nearbyPlayers(listenerSnapshot)) {
-            if (near.equals(speaker)) {
-                continue;
-            }
-
-            PlayerRef player = Universe.get().getPlayer(near);
+    /**
+     * Writes one packet to each recipient's voice stream. A dumb pipe: the
+     * caller decides who the recipients are (proximity around a stone, or
+     * a single linked listener) and is responsible for excluding the
+     * speaker — the packet's speakerId carries no such rule.
+     */
+    private void deliver(RelayedVoiceData packet, Set<UUID> recipients) {
+        for (UUID recipient : recipients) {
+            PlayerRef player = Universe.get().getPlayer(recipient);
             if (player == null) {
                 continue;
             }

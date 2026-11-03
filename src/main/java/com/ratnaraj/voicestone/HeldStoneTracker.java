@@ -8,14 +8,11 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
@@ -33,7 +30,6 @@ public final class HeldStoneTracker {
     private final HytaleLogger logger;
     private final Map<UUID, HeldStone> heldByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerRef> playerRefs = new ConcurrentHashMap<>();
-    private final List<Consumer<UUID>> stoneReleasedCallbacks = new CopyOnWriteArrayList<>();
 
     private record HeldStone(String stoneId, String hand) {
     }
@@ -59,7 +55,6 @@ public final class HeldStoneTracker {
 
         if (previous != null) {
             logReleased(player.getUsername(), previous.stoneId(), previous.hand(), " on disconnect");
-            notifyStoneReleased(player.getUuid());
         }
     }
 
@@ -95,7 +90,6 @@ public final class HeldStoneTracker {
         }
         if (current == null) {
             heldByPlayer.remove(player.getUuid());
-            notifyStoneReleased(player.getUuid());
         } else {
             heldByPlayer.put(player.getUuid(), current);
         }
@@ -105,35 +99,92 @@ public final class HeldStoneTracker {
         logger.at(Level.INFO).log("[VoiceStone] %s released %s (%s%s)", player, stone, hand, suffix);
     }
 
-    public boolean isHoldingStone(UUID uuid) {
-        return heldByPlayer.containsKey(uuid);
-    }
-
-    public void addStoneReleasedCallback(Consumer<UUID> callback) {
-        stoneReleasedCallbacks.add(callback);
-    }
-
-    private void notifyStoneReleased(UUID uuid) {
-        for (Consumer<UUID> callback : stoneReleasedCallbacks) {
-            callback.accept(uuid);
-        }
-    }
-
     public Set<UUID> getHolders() {
         return Set.copyOf(heldByPlayer.keySet());
     }
 
-    public PlayerRef getPlayerRef(UUID uuid) {
-        return playerRefs.get(uuid);
+    /**
+     * Returns the Voice Stone the player currently holds, or null when they
+     * hold none. Re-reads the inventory sections on every call instead of
+     * serving a cached stack: link toggles replace the stack wholesale
+     * (withMetadata returns a new stack), and this is also called from the
+     * voice module's interceptor thread — a fresh read is always current
+     * and never shared. The primary-hand stone wins over the secondary-hand
+     * one, mirroring the game's item-in-hand semantics.
+     */
+    public ItemStack getHeldStone(UUID uuid) {
+        PlayerRef player = playerRefs.get(uuid);
+
+        if (player == null) {
+            return null;
+        }
+
+        ItemStack hotbarStone = activeStone(player, InventoryComponent.Hotbar.getComponentType());
+
+        if (VoiceStoneItems.isVoiceStone(hotbarStone)) {
+            return hotbarStone;
+        }
+
+        ItemStack utilityStone = activeStone(player, InventoryComponent.Utility.getComponentType());
+
+        return VoiceStoneItems.isVoiceStone(utilityStone) ? utilityStone : null;
     }
 
-    private <T extends ActiveSlotInventoryComponent> String activeStoneId(
+    /**
+     * Replaces the player's held Voice Stone with the given stack, in
+     * whichever hand holds it (the same hotbar-first priority as
+     * getHeldStone). withMetadata never mutates in place: the modified
+     * stack must replace the old one in its slot, or the link is lost.
+     *
+     * @return false when no Voice Stone is held — the caller drops the
+     * toggle rather than writing to a stale slot
+     */
+    public boolean writeHeldStone(PlayerRef player, ItemStack newStack) {
+        ActiveSlotInventoryComponent section = heldStoneSection(player);
+
+        if (section == null) {
+            return false;
+        }
+
+        section.getInventory().setItemStackForSlot((short) section.getActiveSlot(), newStack);
+        return true;
+    }
+
+    /**
+     * The inventory section whose active item is a Voice Stone, hotbar
+     * (primary hand) first — the same priority getHeldStone applies.
+     */
+    private ActiveSlotInventoryComponent heldStoneSection(PlayerRef player) {
+        InventoryComponent.Hotbar hotbar =
+                player.getComponentConcurrent(InventoryComponent.Hotbar.getComponentType());
+
+        if (VoiceStoneItems.isVoiceStone(hotbar.getActiveItem())) {
+            return hotbar;
+        }
+
+        InventoryComponent.Utility utility =
+                player.getComponentConcurrent(InventoryComponent.Utility.getComponentType());
+
+        return VoiceStoneItems.isVoiceStone(utility.getActiveItem()) ? utility : null;
+    }
+
+    /**
+     * The active item of one hand's section, whatever it is — the Voice
+     * Stone filtering happens at the call sites.
+     */
+    private <T extends ActiveSlotInventoryComponent> ItemStack activeStone(
             PlayerRef player, ComponentType<EntityStore, T> sectionType) {
         T section = player.getComponentConcurrent(sectionType);
         if (section == null) {
             return null;
         }
-        ItemStack activeItem = section.getActiveItem();
+        return section.getActiveItem();
+    }
+
+    private <T extends ActiveSlotInventoryComponent> String activeStoneId(
+            PlayerRef player, ComponentType<EntityStore, T> sectionType) {
+        ItemStack activeItem = activeStone(player, sectionType);
+
         return VoiceStoneItems.isVoiceStone(activeItem) ? activeItem.getItemId() : null;
     }
 }
