@@ -171,6 +171,7 @@ if (hasHytaleHome) {
         mainClass = 'com.hypixel.hytale.Main'
         classpath = files(serverJar)
         workingDir = serverRunDir.absolutePath
+        standardInput = System.in
         doFirst {
             // Create mods directory and copy plugin JAR
             if (!modsDir.exists()) {

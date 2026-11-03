@@ -1,0 +1,21 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Voice_Stone_Zephyr.name"
+  },
+  "Icon": "Icons/ItemsGenerated/Voice_Stone_Zephyr.png",
+  "Parent": "Voice_Stone_Emerald",
+  "Texture": "Resources/VoiceStone/Voice_Stone_Zephyr.png",
+  "Quality": "Rare",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22,
+      111,
+      0
+    ],
+    "Translation": [
+      -6,
+      -13.5
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Voice_Stone_Sapphire.name"
+  },
+  "Icon": "Icons/ItemsGenerated/Voice_Stone_Sapphire.png",
+  "Parent": "Voice_Stone_Emerald",
+  "Texture": "Resources/VoiceStone/Voice_Stone_Sapphire.png",
+  "Quality": "Rare",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22,
+      111,
+      0
+    ],
+    "Translation": [
+      -6,
+      -13.5
+    ]
+  }
+}

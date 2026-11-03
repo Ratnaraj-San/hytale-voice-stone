@@ -1,0 +1,27 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Voice_Stone_Emerald.name",
+    "Description": "server.items.Voice_Stone_Emerald.description"
+  },
+  "Icon": "Icons/ItemsGenerated/Voice_Stone_Emerald.png",
+  "Model": "Resources/VoiceStone/Voice_Stone.blockymodel",
+  "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
+  "PlayerAnimationsId": "Torch",
+  "MaxStack": 1,
+  "Utility": {
+    "Usable": true
+  },
+  "Quality": "Rare",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22,
+      111,
+      0
+    ],
+    "Translation": [
+      -6,
+      -13.5
+    ]
+  }
+}
