@@ -1,7 +1,9 @@
 package com.ratnaraj.voicestone;
 
+import com.hypixel.hytale.registry.Registration;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
+import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
@@ -22,6 +24,8 @@ public class VoiceStone extends JavaPlugin {
         return instance;
     }
 
+    private Registration voiceInterceptorRegistration;
+
     @Override
     protected void setup() {
         Path pluginDataDir = getDataDirectory();
@@ -30,14 +34,30 @@ public class VoiceStone extends JavaPlugin {
     @Override
     protected void start() {
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
+
         getEntityStoreRegistry().registerSystem(new ActiveSlotChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
+
         registerEvents(heldStoneTracker);
+
+        VoiceModule voiceModule = VoiceModule.get();
+
+        if (voiceModule == null) {
+            getLogger().at(Level.SEVERE).log("[VoiceStone] VoiceModule is null. Plugin could not be started.");
+            return;
+        }
+
+        voiceInterceptorRegistration = VoiceModule.get().addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger()));
+
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
     }
 
     @Override
     public void shutdown() {
+        if (voiceInterceptorRegistration != null) {
+            voiceInterceptorRegistration.unregister();
+        }
+
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin disabled!");
     }
 
