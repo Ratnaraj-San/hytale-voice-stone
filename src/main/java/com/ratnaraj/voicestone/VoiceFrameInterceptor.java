@@ -12,9 +12,11 @@ import java.util.logging.Level;
 public class VoiceFrameInterceptor implements PlayerVoiceInterceptor {
 
     private final HytaleLogger logger;
+    private final BroadcastRouter router;
 
-    public VoiceFrameInterceptor(HytaleLogger logger) {
+    public VoiceFrameInterceptor(HytaleLogger logger, BroadcastRouter router) {
         this.logger = logger;
+        this.router = router;
     }
 
     @Override
@@ -32,7 +34,7 @@ public class VoiceFrameInterceptor implements PlayerVoiceInterceptor {
         double positionY = position.y();
         double positionZ = position.z();
 
-        logger.at(Level.INFO).log(
+        logger.at(Level.FINE).log(
                 "[VoiceStone] frame from %s | %s (%d bytes) at (%.1f, %.1f, %.1f)",
                 playerName,
                 playerUUID.toString(),
@@ -41,5 +43,7 @@ public class VoiceFrameInterceptor implements PlayerVoiceInterceptor {
                 positionY,
                 positionZ
                 );
+
+        router.onFrame(playerVoiceFrame);
     }
 }
