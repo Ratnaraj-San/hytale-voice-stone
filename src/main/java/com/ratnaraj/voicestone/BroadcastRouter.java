@@ -15,9 +15,11 @@ import java.util.UUID;
 /**
  * Routes the voice of a stone-holding speaker to every other stone holder,
  * played positionally from each listener's own stone (M4 broadcast mode,
- * no links). The speaker's original proximity delivery is kept for
- * bystanders; stone holders are excluded from it so they never hear the
- * same voice twice.
+ * no links). The speaker's original proximity delivery is never touched:
+ * physical hearing always works normally for everyone, and a stone holder
+ * standing next to a stone-holding speaker hears them both physically and
+ * through their own stone — preventing that double-hearing is the players'
+ * business, not the plugin's (decided).
  *
  * <p>Delivery is hand-crafted {@link RelayedVoiceData} packets rather than
  * native {@code PositionalVoiceSpeaker}s: the native positional speaker is
@@ -77,8 +79,6 @@ public final class BroadcastRouter {
                 continue;
             }
 
-            frame.excludeListener(listener);
-
             deliverFrame(frame, speaker, speakerSnapshot, listenerSnapshot);
         }
     }
@@ -87,8 +87,12 @@ public final class BroadcastRouter {
      * Builds the relay packet for one (speaker, listener) pair: the audio is
      * positioned at the listener's stone, speakerId is the speaker's player
      * UUID (identity at any distance) and entityId their network entity id
-     * (in-world indicator when loaded). Delivered to everyone near the
-     * stone, not just the holder — that is the leak.
+     * (in-world indicator when loaded) — but only when the speaker is in
+     * the listener's world: network entity ids are per-world, so cross-world
+     * the client would resolve the id to an unrelated entity of the
+     * receiver's own world (observed: the listener seeing themselves as the
+     * speaker). Delivered to everyone near the stone, not just the holder —
+     * that is the leak.
      */
     private void deliverFrame(
             PlayerVoiceFrame frame,
@@ -101,9 +105,13 @@ public final class BroadcastRouter {
         stonePosition.y = listenerSnapshot.position().y();
         stonePosition.z = listenerSnapshot.position().z();
 
+        int entityId = speakerSnapshot.worldId().equals(listenerSnapshot.worldId())
+                ? speakerSnapshot.networkId()
+                : 0;
+
         RelayedVoiceData packet = new RelayedVoiceData(
                 speaker,
-                speakerSnapshot.networkId(),
+                entityId,
                 frame.sequenceNumber(),
                 frame.timestamp(),
                 stonePosition,
