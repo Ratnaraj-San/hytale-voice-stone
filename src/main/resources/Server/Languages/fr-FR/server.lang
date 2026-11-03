@@ -8,3 +8,4 @@ commands.voicestone.desc = Bascule le lien de votre pierre de voix vers un joueu
 commands.voicestone.add.desc = Lie un joueur a votre pierre de voix tenue
 commands.voicestone.remove.desc = Delie un joueur de votre pierre de voix tenue
 commands.voicestone.list.desc = Liste les joueurs lies a votre pierre de voix tenue
+commands.voicestone.clear.desc = Retire tous les liens de votre pierre de voix tenue

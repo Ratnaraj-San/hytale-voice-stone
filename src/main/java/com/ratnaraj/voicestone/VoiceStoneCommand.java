@@ -18,12 +18,13 @@ import java.util.logging.Level;
 
 /**
  * The PvE link commands: {@code /voicestone add <player>},
- * {@code /voicestone remove <player>} and {@code /voicestone list} operate
- * on the Voice Stone currently held by the sender. The physical gesture
- * (crouch + left-click, see {@link LinkGestureSystem}) only works where
- * PvP is enabled — the attack pipeline is gated upstream of the Damage
- * event — so on a PvE server these commands are the way to manage links.
- * Links belong to the stone, never to its holder.
+ * {@code /voicestone remove <player>}, {@code /voicestone clear} and
+ * {@code /voicestone list} operate on the Voice Stone currently held by
+ * the sender. The physical gesture (crouch + left-click, see
+ * {@link LinkGestureSystem}) only works where PvP is enabled — the attack
+ * pipeline is gated upstream of the Damage event — so on a PvE server
+ * these commands are the way to manage links. Links belong to the
+ * stone, never to its holder.
  */
 public final class VoiceStoneCommand extends AbstractCommandCollection {
 
@@ -31,6 +32,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
         super("voicestone", "commands.voicestone.desc");
         addSubCommand(new AddCommand(logger, tracker));
         addSubCommand(new RemoveCommand(logger, tracker));
+        addSubCommand(new ClearCommand(logger, tracker));
         addSubCommand(new ListCommand(tracker));
     }
 
@@ -169,6 +171,39 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             logChange(sender, target, "unlink", stone, links.size());
             context.sendMessage(Message.raw(
                     "[VoiceStone] " + target.getUsername() + " unlinked (" + links.size() + " links on this stone)"));
+        }
+    }
+
+    private static final class ClearCommand extends StoneSubCommand {
+
+        ClearCommand(HytaleLogger logger, HeldStoneTracker tracker) {
+            super("clear", "commands.voicestone.clear.desc", logger, tracker);
+        }
+
+        @Override
+        protected void execute(CommandContext context, PlayerRef sender, ItemStack stone) {
+            List<UUID> links = StoneLinks.get(stone);
+
+            if (links.isEmpty()) {
+                context.sendMessage(Message.raw("[VoiceStone] This stone has no links."));
+                return;
+            }
+
+            int removed = links.size();
+
+            if (!applyLinks(context, sender, stone, List.of())) {
+                return;
+            }
+
+            logger.at(Level.INFO).log(
+                    "[VoiceStone] %s cleared %s (%d links removed)",
+                    sender.getUsername(),
+                    stone.getItemId(),
+                    removed
+            );
+
+            context.sendMessage(Message.raw(
+                    "[VoiceStone] " + removed + (removed == 1 ? " link" : " links") + " removed from this stone."));
         }
     }
 
