@@ -31,9 +31,12 @@ import java.util.UUID;
  * voice chat (decided).
  *
  * <p>No links on the speaker's stone (broadcast): the voice plays from the
- * stone of every holder whose stone accepts this speaker — an unlinked
- * stone hears every broadcast, a linked stone hears only its linked
- * players (decided reception filter). The speaker's original proximity
+ * stone of every holder whose stone accepts the broadcast — the decided
+ * reception filter is a mutual contract (prudent closure): an unlinked
+ * stone hears every broadcast; a stone whose every link is mutual hears
+ * only targeted deliveries and refuses third-party broadcasts; any
+ * non-mutual or unverifiable link (partner not holding their stone)
+ * keeps the stone's reception open. The speaker's original proximity
  * delivery is never touched in this mode: physical hearing always works
  * for everyone.
  *
@@ -149,7 +152,7 @@ public final class BroadcastRouter {
                 continue;
             }
 
-            if (!StoneLinks.receivesBroadcast(listenerStone, speaker)) {
+            if (!receivesBroadcast(listener, listenerStone, speaker)) {
                 continue;
             }
 
@@ -166,6 +169,34 @@ public final class BroadcastRouter {
 
             deliver(packet, recipients);
         }
+    }
+
+    /**
+     * The decided reception filter (prudent closure — privacy is a full
+     * mutual contract): an unlinked stone hears every broadcast; a stone
+     * whose every link is mutual hears only its partners — and partners
+     * never broadcast (they hold linked stones), so a fully mutual stone
+     * refuses every third-party broadcast; any non-mutual or unverifiable
+     * link (the partner not holding their stone) keeps the stone's
+     * reception open. Targeted delivery is not filtered here — the filter
+     * only applies to broadcasts.
+     */
+    private boolean receivesBroadcast(UUID listener, ItemStack listenerStone, UUID speaker) {
+        List<UUID> links = StoneLinks.get(listenerStone);
+
+        if (links.isEmpty()) {
+            return true;
+        }
+
+        for (UUID linked : links) {
+            ItemStack linkedStone = tracker.getHeldStone(linked);
+
+            if (linkedStone == null || !StoneLinks.get(linkedStone).contains(listener)) {
+                return true;
+            }
+        }
+
+        return links.contains(speaker);
     }
 
     /**

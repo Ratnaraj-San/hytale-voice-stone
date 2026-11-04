@@ -124,18 +124,6 @@ public final class StoneLinks {
         return stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
     }
 
-    /**
-     * Decides whether a broadcast from the given speaker should play
-     * through a listener's stone: an unlinked stone hears every
-     * broadcast, a linked stone hears only its linked players (decided
-     * reception filter).
-     */
-    public static boolean receivesBroadcast(ItemStack listenerStone, UUID speaker) {
-        List<UUID> links = get(listenerStone);
-
-        return links.isEmpty() || links.contains(speaker);
-    }
-
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
         if (links == null || links.isEmpty()) {
             return stack.withMetadata(LINKS_KEY, null);
