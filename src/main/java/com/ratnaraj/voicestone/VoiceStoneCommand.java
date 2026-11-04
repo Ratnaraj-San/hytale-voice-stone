@@ -17,14 +17,13 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * The PvE link commands: {@code /voicestone add <player>},
+ * The explicit link commands: {@code /voicestone add <player>},
  * {@code /voicestone remove <player>}, {@code /voicestone clear} and
  * {@code /voicestone list} operate on the Voice Stone currently held by
- * the sender. The physical gesture (crouch + left-click, see
- * {@link LinkGestureSystem}) only works where PvP is enabled — the attack
- * pipeline is gated upstream of the Damage event — so on a PvE server
- * these commands are the way to manage links. Links belong to the
- * stone, never to its holder.
+ * the sender. They are the precise, no-guesswork counterpart to the two
+ * physical gestures — crouch + left-click ({@link LinkGestureSystem},
+ * needs PvP) and crouch + right-click ({@link LinkChainSystem}, works
+ * everywhere). Links belong to the stone, never to its holder.
  */
 public final class VoiceStoneCommand extends AbstractCommandCollection {
 

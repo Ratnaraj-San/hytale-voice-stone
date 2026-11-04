@@ -14,13 +14,11 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.InteractionModule;
-import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -131,7 +129,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         PlayerRef target = nearestPlayerWithinReach(player);
 
         if (target == null) {
-            player.sendMessage(Message.raw("[VoiceStone] No player within reach of the stone."));
+            player.sendMessage(Message.raw("No player within reach of the stone."));
             return;
         }
 
@@ -147,21 +145,10 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        int remaining = StoneLinks.get(linked).size();
-
-        logger.at(Level.INFO).log(
-                "[VoiceStone] %s -> %s : %s on %s (%d links remaining)",
-                player.getUsername(),
-                target.getUsername(),
-                wasLinked ? "unlink" : "link",
-                stone.getItemId(),
-                remaining
-        );
-
         player.sendMessage(Message.raw(
-                "[VoiceStone] " + target.getUsername()
-                        + (wasLinked ? " unlinked" : " linked")
-                        + " (" + remaining + " links on this stone)"
+                target.getUsername()
+                + (wasLinked ? " is no longer" : " is now")
+                + " linked to this stone."
         ));
     }
 
