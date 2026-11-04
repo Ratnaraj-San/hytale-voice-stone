@@ -78,12 +78,12 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
         protected abstract void execute(CommandContext context, PlayerRef sender, ItemStack stone);
 
         /**
-         * Writes the new link set back into the held stone. Returns false
+         * Writes the new stack back into the held stone. Returns false
          * (with feedback sent) when the stone slipped between read and
          * write — the caller must drop the change.
          */
-        final boolean applyLinks(CommandContext context, PlayerRef sender, ItemStack stone, List<UUID> links) {
-            if (tracker.writeHeldStone(sender, StoneLinks.withLinks(stone, links))) {
+        final boolean applyLinks(CommandContext context, PlayerRef sender, ItemStack newStack) {
+            if (tracker.writeHeldStone(sender, newStack)) {
                 return true;
             }
 
@@ -121,22 +121,22 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
                 return;
             }
 
-            List<UUID> links = new ArrayList<>(StoneLinks.get(stone));
-
-            if (links.contains(target.getUuid())) {
+            if (StoneLinks.get(stone).contains(target.getUuid())) {
                 context.sendMessage(Message.raw("[VoiceStone] " + target.getUsername() + " is already linked to this stone."));
                 return;
             }
 
-            links.add(target.getUuid());
+            ItemStack linked = StoneLinks.link(stone, target.getUuid(), target.getUsername());
 
-            if (!applyLinks(context, sender, stone, links)) {
+            if (!applyLinks(context, sender, linked)) {
                 return;
             }
 
-            logChange(sender, target, "link", stone, links.size());
+            int remaining = StoneLinks.get(linked).size();
+
+            logChange(sender, target, "link", stone, remaining);
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + target.getUsername() + " linked (" + links.size() + " links on this stone)"));
+                    "[VoiceStone] " + target.getUsername() + " linked (" + remaining + " links on this stone)"));
         }
     }
 
@@ -157,20 +157,22 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
                 return;
             }
 
-            List<UUID> links = new ArrayList<>(StoneLinks.get(stone));
-
-            if (!links.remove(target.getUuid())) {
+            if (!StoneLinks.get(stone).contains(target.getUuid())) {
                 context.sendMessage(Message.raw("[VoiceStone] " + target.getUsername() + " is not linked to this stone."));
                 return;
             }
 
-            if (!applyLinks(context, sender, stone, links)) {
+            ItemStack linked = StoneLinks.unlink(stone, target.getUuid());
+
+            if (!applyLinks(context, sender, linked)) {
                 return;
             }
 
-            logChange(sender, target, "unlink", stone, links.size());
+            int remaining = StoneLinks.get(linked).size();
+
+            logChange(sender, target, "unlink", stone, remaining);
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + target.getUsername() + " unlinked (" + links.size() + " links on this stone)"));
+                    "[VoiceStone] " + target.getUsername() + " unlinked (" + remaining + " links on this stone)"));
         }
     }
 
@@ -191,7 +193,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
 
             int removed = links.size();
 
-            if (!applyLinks(context, sender, stone, List.of())) {
+            if (!applyLinks(context, sender, StoneLinks.clear(stone))) {
                 return;
             }
 
@@ -225,7 +227,14 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             List<String> names = new ArrayList<>(links.size());
             for (UUID link : links) {
                 PlayerRef player = Universe.get().getPlayer(link);
-                names.add(player == null ? "?" : player.getUsername());
+
+                if (player != null) {
+                    names.add(player.getUsername());
+                    continue;
+                }
+
+                String recorded = StoneLinks.getName(stone, link);
+                names.add(recorded == null ? "?" : recorded);
             }
 
             context.sendMessage(Message.raw(

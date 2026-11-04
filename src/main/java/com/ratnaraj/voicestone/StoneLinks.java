@@ -3,6 +3,9 @@ package com.ratnaraj.voicestone;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,22 +13,28 @@ import java.util.UUID;
 
 /**
  * Reads and writes the link set of a Voice Stone, stored in the stone's
- * ItemStack metadata: the "links" key holds a BSON array of player UUID
- * strings. Links belong to the stone, not to its owner — the metadata
- * travels with the stack, so links survive relogs and giving the stone
- * away. A stone whose link set is empty is unlinked (broadcast mode).
+ * ItemStack metadata under two keys: "links", a BSON array of player
+ * UUID strings — the source of truth, what the router follows — and
+ * "linkNames", a BSON document of uuid-to-display-name recorded at link
+ * time, so the list command can show who a link belongs to even when the
+ * player is offline. The online lookup stays the primary source and the
+ * recorded name is the fallback; a renamed player shows the stale
+ * recorded name until they are re-linked. Links belong to the stone, not
+ * to its owner — the metadata travels with the stack, so links survive
+ * relogs and giving the stone away. A stone whose link set is empty is
+ * unlinked (broadcast mode).
  *
  * <p>Access goes through the typed metadata codec API
  * (getFromMetadataOrNull / withMetadata with a Codec) — the raw
  * ItemStack.getMetadata() is deprecated and clone-heavy. All accessors
  * return fresh copies and the writing ones return a NEW stack
  * (withMetadata never mutates in place): the caller must put the returned
- * stack back where the old one was held.
+ * stack back (HeldStoneTracker.writeHeldStone).
  */
 public final class StoneLinks {
 
-    /** Metadata key under which the link set is stored in the stone's metadata. */
     private static final String LINKS_KEY = "links";
+    private static final String LINK_NAMES_KEY = "linkNames";
 
     /** Codec for the stored link set: a BSON array of UUID strings. */
     private static final ArrayCodec<UUID> LINKS_CODEC = new ArrayCodec<>(Codec.UUID_STRING, UUID[]::new);
@@ -50,56 +59,76 @@ public final class StoneLinks {
         if (links == null || links.length == 0) {
             return List.of();
         }
+
         return List.of(links);
     }
 
     /**
-     * Returns a copy of the stone with its link set replaced wholesale.
-     * Does not mutate the given stack — the returned stack must be written
-     * back by the caller (HeldStoneTracker.writeHeldStone).
-     *
-     * @param stack the stone's ItemStack
-     * @param links the new link set; empty or null clears the links
-     *              (the key is removed: an unlinked stone has no links key)
-     * @return a new ItemStack carrying the new link set
+     * The display name recorded for a link at link time, or null when
+     * none was recorded — the fallback when the online lookup misses.
      */
-    public static ItemStack withLinks(ItemStack stack, List<UUID> links) {
-        if (links == null || links.isEmpty()) {
-            return stack.withMetadata(LINKS_KEY, null);
+    public static String getName(ItemStack stack, UUID player) {
+        if (stack == null || stack.isEmpty()) {
+            return null;
         }
-        return stack.withMetadata(LINKS_KEY, LINKS_CODEC, links.toArray(UUID[]::new));
+
+        BsonDocument names = stack.getFromMetadataOrNull(LINK_NAMES_KEY, Codec.BSON_DOCUMENT);
+
+        if (names == null || !names.containsKey(player.toString())) {
+            return null;
+        }
+
+        return names.getString(player.toString()).getValue();
     }
 
     /**
-     * Convenience toggle (the decided link gesture): returns a copy of the
-     * stone with the target's link flipped — added if absent, removed if
-     * present.
-     *
-     * @param stone  the stone's ItemStack
-     * @param target the player to link or unlink
-     * @return a new ItemStack with the toggled link set
+     * Returns a copy of the stone with the target's link flipped —
+     * added with their name when absent, removed entirely when present.
      */
-    public static ItemStack toggle(ItemStack stone, UUID target) {
-        List<UUID> links = new ArrayList<>(get(stone));
+    public static ItemStack toggle(ItemStack stack, UUID target, String name) {
+        return get(stack).contains(target)
+                ? unlink(stack, target)
+                : link(stack, target, name);
+    }
 
-        if (links.contains(target)) {
-            links.remove(target);
-        } else {
+    /**
+     * Returns a copy of the stone with the target linked and their
+     * display name recorded.
+     */
+    public static ItemStack link(ItemStack stack, UUID target, String name) {
+        List<UUID> links = new ArrayList<>(get(stack));
+
+        if (!links.contains(target)) {
             links.add(target);
         }
 
-        return withLinks(stone, links);
+        return withName(withLinks(stack, links), target, name);
     }
 
     /**
-     * Decides whether a frame from the given speaker should play through a
-     * listener's stone in broadcast mode (speaker's stone has no links):
-     * an unlinked stone hears every broadcast, a linked stone hears only
-     * the players it is linked to (decided reception filter).
-     *
-     * @param listenerStone the listening stone's ItemStack
-     * @param speaker       the speaking player
-     * @return true if the listener's stone may play this speaker's broadcast
+     * Returns a copy of the stone with the target's link and recorded
+     * name removed.
+     */
+    public static ItemStack unlink(ItemStack stack, UUID target) {
+        List<UUID> links = new ArrayList<>(get(stack));
+        links.remove(target);
+
+        return withName(withLinks(stack, links), target, null);
+    }
+
+    /**
+     * Returns a copy of the stone with every link and recorded name
+     * removed — both metadata keys are dropped.
+     */
+    public static ItemStack clear(ItemStack stack) {
+        return stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
+    }
+
+    /**
+     * Decides whether a broadcast from the given speaker should play
+     * through a listener's stone: an unlinked stone hears every
+     * broadcast, a linked stone hears only its linked players (decided
+     * reception filter).
      */
     public static boolean receivesBroadcast(ItemStack listenerStone, UUID speaker) {
         List<UUID> links = get(listenerStone);
@@ -108,18 +137,52 @@ public final class StoneLinks {
     }
 
     /**
-     * Decides whether a one-way link is mutual: the speaker linked the
-     * listener, and the listener's stone links the speaker back. Mutual
-     * links route privately (no positional leak around the listener's
-     * stone), one-way links leak (decided).
-     *
-     * @param listenerStone the listening stone's ItemStack
-     * @param speaker       the speaking player
-     * @return true if the link is mutual
+     * Decides whether a link is mutual: the listener's stone links the
+     * speaker back. Mutual links route privately, one-way links keep the
+     * positional leak (decided).
      */
     public static boolean isMutual(ItemStack listenerStone, UUID speaker) {
-        List<UUID> listenerStonelinks = get(listenerStone);
+        return get(listenerStone).contains(speaker);
+    }
 
-        return listenerStonelinks.contains(speaker);
+    private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
+        if (links == null || links.isEmpty()) {
+            return stack.withMetadata(LINKS_KEY, null);
+        }
+
+        BsonArray array = new BsonArray();
+        for (UUID link : links) {
+            array.add(new BsonString(link.toString()));
+        }
+
+        return stack.withMetadata(LINKS_KEY, array);
+    }
+
+    /**
+     * Records (or removes, with a null name) one display name entry; the
+     * names document is dropped entirely when it becomes empty. The
+     * decoded document is cloned before mutation — getFromMetadataOrNull
+     * returns a fresh copy, but cloning keeps that assumption local.
+     */
+    private static ItemStack withName(ItemStack stack, UUID player, String name) {
+        BsonDocument names = stack.getFromMetadataOrNull(LINK_NAMES_KEY, Codec.BSON_DOCUMENT);
+
+        if (name == null && names == null) {
+            return stack;
+        }
+
+        BsonDocument updated = names == null ? new BsonDocument() : names.clone();
+
+        if (name == null) {
+            updated.remove(player.toString());
+        } else {
+            updated.put(player.toString(), new BsonString(name));
+        }
+
+        if (updated.isEmpty()) {
+            return stack.withMetadata(LINK_NAMES_KEY, null);
+        }
+
+        return stack.withMetadata(LINK_NAMES_KEY, updated);
     }
 }

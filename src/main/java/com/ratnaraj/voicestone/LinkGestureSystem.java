@@ -110,7 +110,7 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
     private void toggleLink(PlayerRef attacker, PlayerRef target, ItemStack stone) {
         boolean wasLinked = StoneLinks.get(stone).contains(target.getUuid());
 
-        ItemStack linked = StoneLinks.toggle(stone, target.getUuid());
+        ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
 
         if (!tracker.writeHeldStone(attacker, linked)) {
             logger.at(Level.WARNING).log(

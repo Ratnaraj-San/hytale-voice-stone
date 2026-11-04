@@ -137,7 +137,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
 
         boolean wasLinked = StoneLinks.get(stone).contains(target.getUuid());
 
-        ItemStack linked = StoneLinks.toggle(stone, target.getUuid());
+        ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
 
         if (!tracker.writeHeldStone(player, linked)) {
             logger.at(Level.WARNING).log(
