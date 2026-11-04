@@ -20,13 +20,15 @@ import java.util.UUID;
  * the stone were the speaker. Two modes, decided in M5:
  *
  * <p>Links on the speaker's stone (targeted routing): the voice plays from
- * the linked players' stones, and nowhere else in the stone network. A
- * mutual link routes privately (delivered to the linked listener only); a
- * one-way link keeps the designed positional leak: anyone physically near
- * the linked listener's stone overhears. A linked player who holds no
- * stone hears nothing through any stone (the stone is the playback
- * device, decided). The speaker's own proximity delivery is never
- * touched — the plugin never alters the base voice chat (decided).
+ * the linked players' stones, and nowhere else in the stone network. The
+ * stone is a loudspeaker: anyone physically near a playing stone overhears,
+ * mutual or one-way alike — there is no private channel (decided, revised
+ * in M5: proximity to a stone always grants hearing, mirroring the
+ * base-voice-chat principle that the plugin never removes a way to
+ * hear). A linked player who holds no stone hears nothing through any
+ * stone (the stone is the playback device, decided). The speaker's own
+ * proximity delivery is never touched — the plugin never alters the base
+ * voice chat (decided).
  *
  * <p>No links on the speaker's stone (broadcast): the voice plays from the
  * stone of every holder whose stone accepts this speaker — an unlinked
@@ -105,9 +107,7 @@ public final class BroadcastRouter {
             List<UUID> links) {
 
         for (UUID linked : links) {
-            ItemStack listenerStone = tracker.getHeldStone(linked);
-
-            if (listenerStone == null) {
+            if (tracker.getHeldStone(linked) == null) {
                 continue;
             }
 
@@ -119,14 +119,7 @@ public final class BroadcastRouter {
             RelayedVoiceData packet = buildPacket(
                     opus, sequence, timestamp, speaker, speakerSnapshot, listenerSnapshot);
 
-            Set<UUID> recipients = new HashSet<>();
-
-            if (StoneLinks.isMutual(listenerStone, speaker)) {
-                recipients.add(linked);
-            } else {
-                recipients.addAll(nearbyPlayers(listenerSnapshot));
-            }
-
+            Set<UUID> recipients = new HashSet<>(nearbyPlayers(listenerSnapshot));
             recipients.remove(speaker);
 
             deliver(packet, recipients);

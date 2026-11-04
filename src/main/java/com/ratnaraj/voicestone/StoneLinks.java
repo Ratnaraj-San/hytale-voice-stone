@@ -136,15 +136,6 @@ public final class StoneLinks {
         return links.isEmpty() || links.contains(speaker);
     }
 
-    /**
-     * Decides whether a link is mutual: the listener's stone links the
-     * speaker back. Mutual links route privately, one-way links keep the
-     * positional leak (decided).
-     */
-    public static boolean isMutual(ItemStack listenerStone, UUID speaker) {
-        return get(listenerStone).contains(speaker);
-    }
-
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
         if (links == null || links.isEmpty()) {
             return stack.withMetadata(LINKS_KEY, null);
