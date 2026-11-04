@@ -11,6 +11,9 @@
   "Utility": {
     "Usable": true
   },
+  "Interactions": {
+    "Secondary": "Root_VoiceStone_Link"
+  },
   "Quality": "Rare",
   "IconProperties": {
     "Scale": 0.58823,

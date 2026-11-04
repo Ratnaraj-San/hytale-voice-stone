@@ -8,7 +8,6 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import javax.annotation.Nonnull;
-import java.nio.file.Path;
 import java.util.logging.Level;
 
 public class VoiceStone extends JavaPlugin {
@@ -27,16 +26,14 @@ public class VoiceStone extends JavaPlugin {
     private Registration voiceInterceptorRegistration;
 
     @Override
-    protected void setup() {
-        Path pluginDataDir = getDataDirectory();
-    }
-
-    @Override
     protected void start() {
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
 
         getEntityStoreRegistry().registerSystem(new ActiveSlotChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
+        getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker));
+
+        getCommandRegistry().registerCommand(new VoiceStoneCommand(getLogger(), heldStoneTracker));
 
         registerEvents(heldStoneTracker);
 
@@ -49,6 +46,8 @@ public class VoiceStone extends JavaPlugin {
 
         BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
         voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter));
+
+        getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
     }
@@ -70,8 +69,5 @@ public class VoiceStone extends JavaPlugin {
         }));
         getEventRegistry().register(PlayerDisconnectEvent.class,
                 event -> heldStoneTracker.onDisconnect(event.getPlayerRef()));
-    }
-
-    private void registerCommands() {
     }
 }
