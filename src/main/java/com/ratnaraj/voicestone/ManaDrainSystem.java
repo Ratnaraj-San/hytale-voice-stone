@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatsModule;
+import com.hypixel.hytale.server.core.modules.entitystats.StatChangeDirection;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
@@ -29,6 +30,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
     private static final float MANA_DRAIN_AMOUNT = 5.0f;
     private static final int MANA_DRAIN_FREQUENCY_MS = 1000;
+    private static final long MANA_ZERO_LOCK_MS = 3000;
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -36,6 +38,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
     private final SpeakingTracker speakingTracker;
 
     private final Map<UUID, Instant> chrono = new ConcurrentHashMap<>();
+    private final Map<UUID, Instant> zeroLocks = new ConcurrentHashMap<>();
 
     /** Diagnostic phase per player: gates log once per transition, not per tick. */
     private final Map<UUID, String> phase = new ConcurrentHashMap<>();
@@ -68,8 +71,20 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
         if (stats == null) { return; }
 
+
         int manaIndex = DefaultEntityStatTypes.getMana();
         Instant now = store.getResource(TimeResource.getResourceType()).getNow();
+
+        Instant zeroLock = zeroLocks.get(playerUuid);
+
+        if (zeroLock != null) {
+            if (now.isAfter(zeroLock)) {
+                zeroLocks.remove(playerUuid);
+                stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, false);
+
+                logger.at(Level.INFO).log("[ManaDrain] %s: mana regeneration resumed", player.getUsername());
+            }
+        }
 
         ItemStack stone = tracker.getHeldStone(playerUuid);
 
@@ -136,6 +151,15 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
                     mana == null ? "?" : String.valueOf(mana.get())
             );
 
+            if (mana != null && mana.get() <= 0.0f) {
+                Instant previousLock = zeroLocks.put(playerUuid, now.plusMillis(MANA_ZERO_LOCK_MS));
+                stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, true);
+
+                if (previousLock == null) {
+                    logger.at(Level.INFO).log("[ManaDrain] %s: mana exhausted, regeneration frozen", player.getUsername());
+                }
+            }
+
             chrono.put(playerUuid, now);
         }
     }
@@ -157,6 +181,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
     public void clear(UUID uuid) {
         chrono.remove(uuid);
+        zeroLocks.remove(uuid);
     }
 
 }
