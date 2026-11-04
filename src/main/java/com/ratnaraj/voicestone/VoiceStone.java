@@ -28,14 +28,13 @@ public class VoiceStone extends JavaPlugin {
     @Override
     protected void start() {
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
+        SpeakingTracker speakingTracker = new SpeakingTracker();
 
         getEntityStoreRegistry().registerSystem(new ActiveSlotChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker));
 
         getCommandRegistry().registerCommand(new VoiceStoneCommand(getLogger(), heldStoneTracker));
-
-        registerEvents(heldStoneTracker);
 
         VoiceModule voiceModule = VoiceModule.get();
 
@@ -44,10 +43,15 @@ public class VoiceStone extends JavaPlugin {
             return;
         }
 
+        ManaDrainSystem manaDrainSystem = new ManaDrainSystem(getLogger(), heldStoneTracker, voiceModule, speakingTracker);
+
+        registerEvents(heldStoneTracker, manaDrainSystem);
+
         BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
-        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter));
+        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter, speakingTracker));
 
         getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
+        getEntityStoreRegistry().registerSystem(manaDrainSystem);
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
     }
@@ -61,12 +65,15 @@ public class VoiceStone extends JavaPlugin {
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin disabled!");
     }
 
-    private void registerEvents(HeldStoneTracker heldStoneTracker) {
+    private void registerEvents(HeldStoneTracker heldStoneTracker, ManaDrainSystem manaDrainSystem) {
         getEventRegistry().registerAsync(PlayerConnectEvent.class, future -> future.thenApply(event -> {
             heldStoneTracker.reset(event.getPlayerRef().getUuid());
             heldStoneTracker.update(event.getPlayerRef());
+            manaDrainSystem.clear(event.getPlayerRef().getUuid());
+
             return event;
         }));
+
         getEventRegistry().register(PlayerDisconnectEvent.class,
                 event -> heldStoneTracker.onDisconnect(event.getPlayerRef()));
     }

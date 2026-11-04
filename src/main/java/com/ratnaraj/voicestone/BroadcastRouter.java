@@ -74,6 +74,10 @@ public final class BroadcastRouter {
             return;
         }
 
+        if (ManaCosts.isOutOfMana(speaker)) {
+            return;
+        }
+
         VoiceModule.PositionSnapshot speakerSnapshot = voiceModule.getCachedPosition(speaker);
         if (speakerSnapshot == null) {
             return;

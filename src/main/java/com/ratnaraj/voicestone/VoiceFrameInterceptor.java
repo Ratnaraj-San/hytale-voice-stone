@@ -14,14 +14,18 @@ public class VoiceFrameInterceptor implements PlayerVoiceInterceptor {
 
     private final HytaleLogger logger;
     private final BroadcastRouter router;
+    private final SpeakingTracker speakingTracker;
 
-    public VoiceFrameInterceptor(HytaleLogger logger, BroadcastRouter router) {
+    public VoiceFrameInterceptor(HytaleLogger logger, BroadcastRouter router, SpeakingTracker speakingTracker) {
         this.logger = logger;
         this.router = router;
+        this.speakingTracker = speakingTracker;
     }
 
     @Override
     public void intercept(PlayerVoiceFrame frame) {
+        speakingTracker.mark(frame.speaker().getUuid());
+
         logger.at(Level.FINE).log(
                 "[VoiceStone] frame from %s (%d bytes) at (%.1f, %.1f, %.1f)",
                 frame.speaker().getUsername(),

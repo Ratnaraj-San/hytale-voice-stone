@@ -62,23 +62,24 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
             return;
         }
 
-        PlayerRef attacker = playerRef(source.getRef());
+        PlayerRef holder = playerRef(source.getRef());
         PlayerRef target = chunk.getComponent(index, PlayerRef.getComponentType());
 
-        if (attacker == null || target == null || attacker.getUuid().equals(target.getUuid())) {
+        if (holder == null || target == null || holder.getUuid().equals(target.getUuid())) {
             return;
         }
 
-        if (!isCrouching(attacker)) {
+        if (!isCrouching(holder)) {
             return;
         }
 
-        ItemStack stone = tracker.getHeldStone(attacker.getUuid());
+        ItemStack stone = tracker.getHeldStone(holder.getUuid());
+
         if (stone == null) {
             return;
         }
 
-        toggleLink(attacker, target, stone);
+        toggleLink(holder, target, stone);
         event.setCancelled(true);
     }
 
@@ -105,22 +106,32 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
      * Flips the link on the stone, puts the new stack back in the hand
      * that holds it, and logs the transition.
      */
-    private void toggleLink(PlayerRef attacker, PlayerRef target, ItemStack stone) {
-        boolean wasLinked = StoneLinks.get(stone).contains(target.getUuid());
-
-        ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
-
-        if (!tracker.writeHeldStone(attacker, linked)) {
-            logger.at(Level.WARNING).log(
-                    "[VoiceStone] %s's stone vanished between read and write, link toggle dropped",
-                    attacker.getUsername()
+    private void toggleLink(PlayerRef holder, PlayerRef target, ItemStack stone) {
+        if (!ManaCosts.tryConsume(holder)) {
+            logger.at(Level.INFO).log(
+                    "[VoiceStone] %s's link gesture refused: not enough mana",
+                    holder.getUsername()
             );
             return;
         }
 
+        boolean wasLinked = StoneLinks.get(stone).contains(target.getUuid());
+
+        ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
+
+        if (!tracker.writeHeldStone(holder, linked)) {
+            logger.at(Level.WARNING).log(
+                    "[VoiceStone] %s's stone vanished between read and write, link toggle dropped",
+                    holder.getUsername()
+            );
+            return;
+        }
+
+
+
         logger.at(Level.INFO).log(
                 "[VoiceStone] %s -> %s : %s on %s (%d links remaining)",
-                attacker.getUsername(),
+                holder.getUsername(),
                 target.getUsername(),
                 wasLinked ? "unlink" : "link",
                 stone.getItemId(),

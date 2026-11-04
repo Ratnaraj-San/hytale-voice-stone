@@ -128,15 +128,23 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
      * The gesture itself: crouch is required, the target is the nearest
      * other player within reach, the toggle is the shared link machinery.
      */
-    private void handleGesture(PlayerRef player, ItemStack stone) {
-        if (!isCrouching(player)) {
+    private void handleGesture(PlayerRef holder, ItemStack stone) {
+        if (!isCrouching(holder)) {
             return;
         }
 
-        PlayerRef target = aimedPlayerWithinReach(player);
+        PlayerRef target = aimedPlayerWithinReach(holder);
 
         if (target == null) {
-            player.sendMessage(Message.raw("No player under the stone's sight."));
+            holder.sendMessage(Message.raw("No player under the stone's sight."));
+            return;
+        }
+
+        if (!ManaCosts.tryConsume(holder)) {
+            logger.at(Level.INFO).log(
+                    "[VoiceStone] %s's link gesture refused: not enough mana",
+                    holder.getUsername()
+            );
             return;
         }
 
@@ -144,15 +152,15 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
 
         ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
 
-        if (!tracker.writeHeldStone(player, linked)) {
+        if (!tracker.writeHeldStone(holder, linked)) {
             logger.at(Level.WARNING).log(
                     "[VoiceStone] %s's stone vanished between read and write, link toggle dropped",
-                    player.getUsername()
+                    holder.getUsername()
             );
             return;
         }
 
-        player.sendMessage(Message.raw(
+        holder.sendMessage(Message.raw(
                 target.getUsername()
                 + (wasLinked ? " is no longer" : " is now")
                 + " linked to this stone."
