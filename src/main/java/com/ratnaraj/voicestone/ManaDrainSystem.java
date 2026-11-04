@@ -82,7 +82,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
                 zeroLocks.remove(playerUuid);
                 stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, false);
 
-                logger.at(Level.INFO).log("[ManaDrain] %s: mana regeneration resumed", player.getUsername());
+                logger.at(Level.FINE).log("[ManaDrain] %s: mana regeneration resumed", player.getUsername());
             }
         }
 
@@ -129,7 +129,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
         if (start == null) {
             if (enterPhase(player, "timer started")) {
                 EntityStatValue mana = manaIndex < 0 ? null : stats.get(manaIndex);
-                logger.at(Level.INFO).log(
+                logger.at(Level.FINE).log(
                         "[ManaDrain] mana stat index=%d, current=%s",
                         manaIndex,
                         mana == null ? "MISSING" : String.valueOf(mana.get())
@@ -144,7 +144,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
             EntityStatValue mana = stats.get(manaIndex);
 
-            logger.at(Level.INFO).log(
+            logger.at(Level.FINE).log(
                     "[ManaDrain] %s drained %.1f mana, now %s",
                     player.getUsername(),
                     MANA_DRAIN_AMOUNT,
@@ -156,7 +156,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
                 stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, true);
 
                 if (previousLock == null) {
-                    logger.at(Level.INFO).log("[ManaDrain] %s: mana exhausted, regeneration frozen", player.getUsername());
+                    logger.at(Level.FINE).log("[ManaDrain] %s: mana exhausted, regeneration frozen", player.getUsername());
                 }
             }
 
@@ -175,7 +175,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
             return false;
         }
 
-        logger.at(Level.INFO).log("[ManaDrain] %s: %s", player.getUsername(), phaseName);
+        logger.at(Level.FINE).log("[ManaDrain] %s: %s", player.getUsername(), phaseName);
         return true;
     }
 
