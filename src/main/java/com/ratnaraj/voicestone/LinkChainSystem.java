@@ -136,7 +136,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         PlayerRef target = aimedPlayerWithinReach(player);
 
         if (target == null) {
-            player.sendMessage(Message.raw("[VoiceStone] No player under the stone's sight."));
+            player.sendMessage(Message.raw("No player under the stone's sight."));
             return;
         }
 

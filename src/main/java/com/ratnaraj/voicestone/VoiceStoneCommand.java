@@ -67,7 +67,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             ItemStack stone = tracker.getHeldStone(sender.getUuid());
 
             if (stone == null) {
-                context.sendMessage(Message.raw("[VoiceStone] Hold a Voice Stone first."));
+                context.sendMessage(Message.raw("Hold a Voice Stone first."));
                 return;
             }
 
@@ -86,7 +86,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
                 return true;
             }
 
-            context.sendMessage(Message.raw("[VoiceStone] The stone slipped out of your hands, nothing changed."));
+            context.sendMessage(Message.raw("The stone slipped out of your hands, nothing changed."));
             return false;
         }
 
@@ -116,12 +116,12 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             PlayerRef target = playerArg.get(context);
 
             if (target == null || target.getUuid().equals(sender.getUuid())) {
-                context.sendMessage(Message.raw("[VoiceStone] You cannot link a stone to yourself."));
+                context.sendMessage(Message.raw(" You cannot link a stone to yourself."));
                 return;
             }
 
             if (StoneLinks.get(stone).contains(target.getUuid())) {
-                context.sendMessage(Message.raw("[VoiceStone] " + target.getUsername() + " is already linked to this stone."));
+                context.sendMessage(Message.raw(target.getUsername() + " is already linked to this stone."));
                 return;
             }
 
@@ -135,7 +135,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
 
             logChange(sender, target, "link", stone, remaining);
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + target.getUsername() + " linked (" + remaining + " links on this stone)"));
+                    target.getUsername() + " is now linked to this stone."));
         }
     }
 
@@ -157,7 +157,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             }
 
             if (!StoneLinks.get(stone).contains(target.getUuid())) {
-                context.sendMessage(Message.raw("[VoiceStone] " + target.getUsername() + " is not linked to this stone."));
+                context.sendMessage(Message.raw(target.getUsername() + " is not linked to this stone."));
                 return;
             }
 
@@ -171,7 +171,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
 
             logChange(sender, target, "unlink", stone, remaining);
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + target.getUsername() + " unlinked (" + remaining + " links on this stone)"));
+                    target.getUsername() + "is no longer linked to this stone)"));
         }
     }
 
@@ -186,7 +186,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             List<UUID> links = StoneLinks.get(stone);
 
             if (links.isEmpty()) {
-                context.sendMessage(Message.raw("[VoiceStone] This stone has no links."));
+                context.sendMessage(Message.raw("This stone has no links."));
                 return;
             }
 
@@ -204,7 +204,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             );
 
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + removed + (removed == 1 ? " link" : " links") + " removed from this stone."));
+                    removed + (removed == 1 ? " link" : " links") + " removed from this stone."));
         }
     }
 
@@ -219,7 +219,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             List<UUID> links = StoneLinks.get(stone);
 
             if (links.isEmpty()) {
-                context.sendMessage(Message.raw("[VoiceStone] This stone has no links."));
+                context.sendMessage(Message.raw("This stone has no links."));
                 return;
             }
 
@@ -237,7 +237,7 @@ public final class VoiceStoneCommand extends AbstractCommandCollection {
             }
 
             context.sendMessage(Message.raw(
-                    "[VoiceStone] " + names.size() + " links: " + String.join(", ", names)));
+                    "This stone is linked to " + names.size() + (names.size() <= 1 ? " player" : " players") + String.join(", ", names)));
         }
     }
 }
