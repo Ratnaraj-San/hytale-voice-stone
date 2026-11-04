@@ -6,6 +6,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
@@ -18,6 +20,8 @@ import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +31,9 @@ import java.util.logging.Level;
 
 /**
  * The immersive link gesture: crouch + right-click with the stone in
- * hand toggles the link to the nearest player within reach. Fully
+ * hand toggles the link to the player under the crosshair, within
+ * reach (an angular aim cone — closest to the crosshair wins, so a
+ * specific person can be picked out of a crowd). Fully
  * server-side, works in PvE — nothing here needs the client to run
  * plugin code.
  *
@@ -52,6 +58,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     private static final String LINK_ROOT_ID = "Root_VoiceStone_Link";
     private static final double REACH = 4.0;
     private static final double REACH_SQUARED = REACH * REACH;
+    private static final double AIM_CONE_DEGREES = 30.0;
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -126,10 +133,10 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        PlayerRef target = nearestPlayerWithinReach(player);
+        PlayerRef target = aimedPlayerWithinReach(player);
 
         if (target == null) {
-            player.sendMessage(Message.raw("No player within reach of the stone."));
+            player.sendMessage(Message.raw("[VoiceStone] No player under the stone's sight."));
             return;
         }
 
@@ -163,38 +170,55 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * The nearest other player within reach, positions from the voice
-     * module's cached snapshots (the same source the router trusts).
+     * The player under the crosshair, within reach: candidates are the
+     * voice module's snapshots (eye-height positions, same world as the
+     * actor, not dead), scored by the angle between the actor's head
+     * direction and the direction to them; the best candidate must sit
+     * inside the aim cone. This is an angular check, not a physical
+     * raycast — walls do not block, at 4 blocks of reach that is a
+     * tolerable simplification.
      */
-    private PlayerRef nearestPlayerWithinReach(PlayerRef actor) {
-        VoiceModule.PositionSnapshot actorPosition = voiceModule.getCachedPosition(actor.getUuid());
+    private PlayerRef aimedPlayerWithinReach(PlayerRef actor) {
+        VoiceModule.PositionSnapshot actorSnapshot = voiceModule.getCachedPosition(actor.getUuid());
+        Rotation3f headRotation = actor.getHeadRotation();
 
-        if (actorPosition == null) {
+        if (actorSnapshot == null || headRotation == null) {
             return null;
         }
 
-        UUID nearest = null;
-        double nearestDistance = Double.MAX_VALUE;
+        Vector3dc origin = actorSnapshot.position();
+        Vector3d look = Transform.getDirection(headRotation.x, headRotation.y).normalize(new Vector3d());
+
+        UUID best = null;
+        double bestDot = Math.cos(Math.toRadians(AIM_CONE_DEGREES));
 
         for (UUID candidate : voiceModule.getPlayerStates().keySet()) {
             if (candidate.equals(actor.getUuid())) {
                 continue;
             }
 
-            VoiceModule.PositionSnapshot position = voiceModule.getCachedPosition(candidate);
+            VoiceModule.PositionSnapshot snapshot = voiceModule.getCachedPosition(candidate);
 
-            if (position == null) {
+            if (snapshot == null || snapshot.isDead() || !snapshot.worldId().equals(actorSnapshot.worldId())) {
                 continue;
             }
 
-            double distance = position.position().distanceSquared(actorPosition.position());
+            Vector3d toTarget = snapshot.position().sub(origin, new Vector3d());
 
-            if (distance <= REACH_SQUARED && distance < nearestDistance) {
-                nearest = candidate;
-                nearestDistance = distance;
+            if (toTarget.lengthSquared() > REACH_SQUARED) {
+                continue;
+            }
+
+            double dot = toTarget.lengthSquared() == 0.0
+                    ? 1.0
+                    : look.dot(toTarget.normalize());
+
+            if (dot > bestDot) {
+                best = candidate;
+                bestDot = dot;
             }
         }
 
-        return nearest == null ? null : Universe.get().getPlayer(nearest);
+        return best == null ? null : Universe.get().getPlayer(best);
     }
 }
