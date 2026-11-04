@@ -4,10 +4,6 @@ import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.packets.stream.StreamType;
 import com.hypixel.hytale.protocol.packets.voice.RelayedVoiceData;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatsModule;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.voice.PlayerVoiceFrame;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -78,7 +74,7 @@ public final class BroadcastRouter {
             return;
         }
 
-        if (isOutOfMana(speaker)) {
+        if (ManaCosts.isOutOfMana(speaker)) {
             return;
         }
 
@@ -288,31 +284,5 @@ public final class BroadcastRouter {
 
     private static double squared(double value) {
         return value * value;
-    }
-
-    private boolean isOutOfMana(UUID speaker) {
-        EntityStatsModule statsModule = EntityStatsModule.get();
-        int manaIndex = DefaultEntityStatTypes.getMana();
-
-        if (statsModule == null || manaIndex < 0) {
-            return false;
-        }
-
-        PlayerRef player = Universe.get().getPlayer(speaker);
-
-        if (player == null) {
-            return false;
-        }
-
-        EntityStatMap stats = player.getComponentConcurrent(
-                statsModule.getEntityStatMapComponentType());
-
-        if (stats == null) {
-            return false;
-        }
-
-        EntityStatValue mana = stats.get(manaIndex);
-
-        return mana != null && mana.get() <= 0.0f;
     }
 }
