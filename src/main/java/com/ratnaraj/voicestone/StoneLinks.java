@@ -2,14 +2,19 @@ package com.ratnaraj.voicestone;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.item.config.metadata.ItemDisplayMetadata;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Reads and writes the link set of a Voice Stone, stored in the stone's
@@ -102,7 +107,10 @@ public final class StoneLinks {
             links.add(target);
         }
 
-        return withName(withLinks(stack, links), target, name);
+        ItemStack stackWithLinks = withLinks(stack, links);
+        ItemStack stackWithName = withName(stackWithLinks, target, name);
+
+        return withTooltip(stackWithName);
     }
 
     /**
@@ -113,7 +121,10 @@ public final class StoneLinks {
         List<UUID> links = new ArrayList<>(get(stack));
         links.remove(target);
 
-        return withName(withLinks(stack, links), target, null);
+        ItemStack stackWithLinks = withLinks(stack, links);
+        ItemStack stackWithName = withName(stackWithLinks, target, null);
+
+        return withTooltip(stackWithName);
     }
 
     /**
@@ -121,7 +132,9 @@ public final class StoneLinks {
      * removed — both metadata keys are dropped.
      */
     public static ItemStack clear(ItemStack stack) {
-        return stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
+        ItemStack stackWithMetadata = stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
+
+        return withTooltip(stackWithMetadata);
     }
 
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
@@ -163,5 +176,38 @@ public final class StoneLinks {
         }
 
         return stack.withMetadata(LINK_NAMES_KEY, updated);
+    }
+
+    private static ItemStack withTooltip(ItemStack stack) {
+        List<UUID> links = get(stack);
+
+        if (links.isEmpty()) {
+            return stack.withMetadata(ItemDisplayMetadata.KEY, (BsonValue) null);
+        }
+
+        String names = links.stream()
+                .map(link -> {
+                    String name = getName(stack, link);
+                    return name == null ? "?" : name;
+                })
+                .collect(Collectors.joining(", "));
+
+        ItemDisplayMetadata display = new ItemDisplayMetadata();
+
+        Message baseDescription = Message.translation("server.items.Voice_Stone_Emerald.description");
+
+        Message linksDescription = Message
+                .translation("server.voicestone.tooltip.links")
+                .param("names", names)
+                .color(Color.WHITE);
+
+        Message newDescription = Message.join(
+                baseDescription,
+                linksDescription
+        );
+
+        display.setDescription(newDescription);
+
+        return stack.withMetadata(ItemDisplayMetadata.KEYED_CODEC, display);
     }
 }

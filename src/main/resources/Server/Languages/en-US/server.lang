@@ -1,8 +1,9 @@
 items.Voice_Stone_Emerald.name = Emerald Voice Stone
-items.Voice_Stone_Emerald.description = A magical stone that carries voices both ways. Hold it to speak to and hear other stone-holders through your own stone, as if they were standing on it.
+items.Voice_Stone_Emerald.description = Carries voices between stone-holders.
 items.Voice_Stone_Zephyr.name = Zephyr Voice Stone
 items.Voice_Stone_Sapphire.name = Sapphire Voice Stone
 items.Voice_Stone_Ruby.name = Ruby Voice Stone
+voicestone.tooltip.links = \nLinked to {names}
 commands.voicestone.player.desc = The player to link or unlink
 commands.voicestone.desc = Toggle the link of your held Voice Stone to a player
 commands.voicestone.add.desc = Link a player to your held Voice Stone
