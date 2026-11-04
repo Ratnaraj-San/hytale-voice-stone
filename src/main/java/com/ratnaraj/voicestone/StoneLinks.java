@@ -40,6 +40,7 @@ public final class StoneLinks {
 
     private static final String LINKS_KEY = "links";
     private static final String LINK_NAMES_KEY = "linkNames";
+    private static final String LINKED_ITEM_SUFFIX = "_Linked";
 
     /** Codec for the stored link set: a BSON array of UUID strings. */
     private static final ArrayCodec<UUID> LINKS_CODEC = new ArrayCodec<>(Codec.UUID_STRING, UUID[]::new);
@@ -110,7 +111,7 @@ public final class StoneLinks {
         ItemStack stackWithLinks = withLinks(stack, links);
         ItemStack stackWithName = withName(stackWithLinks, target, name);
 
-        return withTooltip(stackWithName);
+        return withVariant(withTooltip(stackWithName));
     }
 
     /**
@@ -124,7 +125,7 @@ public final class StoneLinks {
         ItemStack stackWithLinks = withLinks(stack, links);
         ItemStack stackWithName = withName(stackWithLinks, target, null);
 
-        return withTooltip(stackWithName);
+        return withVariant(withTooltip(stackWithName));
     }
 
     /**
@@ -134,7 +135,7 @@ public final class StoneLinks {
     public static ItemStack clear(ItemStack stack) {
         ItemStack stackWithMetadata = stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
 
-        return withTooltip(stackWithMetadata);
+        return withVariant(withTooltip(stackWithMetadata));
     }
 
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
@@ -209,5 +210,37 @@ public final class StoneLinks {
         display.setDescription(newDescription);
 
         return stack.withMetadata(ItemDisplayMetadata.KEYED_CODEC, display);
+    }
+
+    /**
+     * Returns the stone under the item id matching its link state: a
+     * linked stone uses the _Linked visual variant (same base assets,
+     * different Texture and Icon), an unlinked one the base item. The
+     * metadata document travels whole into the new stack — the id
+     * constructor is the only route to a different item, and its single
+     * metadata read is the deprecated clone the swap costs. A target id
+     * that is not a known Voice Stone (assets missing or renamed) leaves
+     * the stack untouched rather than forging an invalid item.
+     */
+    private static ItemStack withVariant(ItemStack stack) {
+        boolean linked = !get(stack).isEmpty();
+
+        String id = stack.getItemId();
+        boolean linkedId = id.endsWith(LINKED_ITEM_SUFFIX);
+
+        if (linked == linkedId) {
+            return stack;
+        }
+
+        String baseId = linkedId
+                ? id.substring(0, id.length() - LINKED_ITEM_SUFFIX.length())
+                : id;
+        String targetId = linked ? baseId + LINKED_ITEM_SUFFIX : baseId;
+
+        if (!VoiceStoneItems.IDS.contains(targetId)) {
+            return stack;
+        }
+
+        return new ItemStack(targetId, stack.getQuantity(), stack.getMetadata());
     }
 }
