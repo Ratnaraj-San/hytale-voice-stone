@@ -47,6 +47,8 @@ public class VoiceStone extends JavaPlugin {
         BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
         voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter));
 
+        getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
+
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
     }
 
