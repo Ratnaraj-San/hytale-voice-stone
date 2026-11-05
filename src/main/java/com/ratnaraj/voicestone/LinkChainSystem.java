@@ -11,7 +11,6 @@ import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.SoundCategory;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
@@ -35,28 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * The immersive link gesture: crouch + right-click with the stone in
- * hand toggles the link to the player under the crosshair, within
- * reach (an angular aim cone — closest to the crosshair wins, so a
- * specific person can be picked out of a crowd). Fully
- * server-side, works in PvE — nothing here needs the client to run
- * plugin code.
- *
- * <p>Mechanism: the stone's item asset binds Secondary to the named
- * {@code Root_VoiceStone_Link} chain (the same way vanilla food binds its
- * consume root), so a right-click runs that chain — a 0.2s vanilla
- * Simple node, invisible data the stock client already understands. This
- * system watches the active chains of every stone holder through their
- * {@link InteractionManager} and reacts to a chain it has not seen yet
- * for the {@code Root_VoiceStone_Link} root. The 0.2s runtime keeps the
- * chain observable for several ticks and doubles as a subtle use
- * lockout, the gesture's only feedback window.
- *
- * <p>Guards: the holder must be crouching (a plain right-click is
- * ignored), and a target must be within reach — the nearest other
- * player, position from the voice module's cached snapshots. The toggle
- * itself is the shared machinery: {@link StoneLinks#toggle} and
- * {@link HeldStoneTracker#writeHeldStone}.
+ * The immersive link gesture: crouch + right-click with the stone in hand
+ * toggles the link to the player under the crosshair, within reach. Works
+ * in PvE — the stone's item asset binds its Secondary interaction to the
+ * named {@code Root_VoiceStone_Link} chain (vanilla data, understood by
+ * the stock client), and this system reacts to a chain of that root it has
+ * not handled yet per player; nothing here needs the client to run plugin
+ * code. The chain's 0.2s runtime doubles as a subtle use lockout.
  */
 public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
 
@@ -64,17 +48,6 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     private static final double REACH = 4.0;
     private static final double REACH_SQUARED = REACH * REACH;
     private static final double AIM_CONE_DEGREES = 30.0;
-
-    /**
-     * Feedback sounds: the toggle sounds play exactly as their
-     * SoundEvent assets define them — volume and pitch live in the
-     * asset JSON, the packet stays at neutral — while the
-     * mana-refusal sound supplements its asset with code-side
-     * decibels/semitones (0 = neutral for both, converted to the
-     * packet's linear rate via {@link AudioUtil}) to mark the
-     * failure. The ids, volume and pitch are tunables in the
-     * plugin config (M8).
-     */
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -141,14 +114,11 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * Plays a feedback sound 3d at the holder — everyone within
-     * earshot hears the stone react, the holder like anyone else
-     * (decided: every feedback sound is 3d, refusal included; a 2d
-     * copy alongside would double the holder's playback). The
-     * neutral overload plays the sound as its asset defines it;
-     * the refusal adds code-side decibels/semitones to mark the
-     * failed gesture. Falls back to 2d-to-player when the holder's
-     * transform is unreadable — never lose the feedback.
+     * Plays a feedback sound 3d at the holder — everyone within earshot
+     * hears the stone react — falling back to 2d-to-player when the
+     * holder's transform is unreadable. Volume and pitch are decibels and
+     * semitones: AudioUtil converts them to the packet's linear rate, and
+     * passing dB/semitone values raw produces silence.
      */
     private void playFeedbackSound(PlayerRef holder, String soundEventId, Store<EntityStore> store) {
         playFeedbackSound(holder, soundEventId, 0.0f, 0.0f, store);
@@ -182,12 +152,6 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         );
     }
 
-    /**
-     * The gesture itself: crouch is required, the target is the nearest
-     * other player within reach, the toggle is the shared link machinery.
-     * The store rides along for the 3d feedback sound's component
-     * accessor.
-     */
     private void handleGesture(PlayerRef holder, ItemStack stone, Store<EntityStore> store) {
         if (!isCrouching(holder)) {
             return;
@@ -196,7 +160,6 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         PlayerRef target = aimedPlayerWithinReach(holder);
 
         if (target == null) {
-            holder.sendMessage(Message.raw("No player under the stone's sight."));
             return;
         }
 
@@ -232,14 +195,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
                     "[VoiceStone] %s's stone vanished between read and write, link toggle dropped",
                     holder.getUsername()
             );
-            return;
         }
-
-        holder.sendMessage(Message.raw(
-                target.getUsername()
-                + (wasLinked ? " is no longer" : " is now")
-                + " linked to this stone."
-        ));
     }
 
     private boolean isCrouching(PlayerRef player) {
@@ -253,13 +209,11 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * The player under the crosshair, within reach: candidates are the
-     * voice module's snapshots (eye-height positions, same world as the
-     * actor, not dead), scored by the angle between the actor's head
-     * direction and the direction to them; the best candidate must sit
-     * inside the aim cone. This is an angular check, not a physical
-     * raycast — walls do not block, at 4 blocks of reach that is a
-     * tolerable simplification.
+     * The player under the crosshair, within reach: candidates are the voice
+     * module's snapshots (same world, not dead), scored by the angle to the
+     * look direction; the best candidate must sit inside the aim cone. An
+     * angular check, not a raycast — walls do not block, tolerable at this
+     * reach.
      */
     private PlayerRef aimedPlayerWithinReach(PlayerRef actor) {
         VoiceModule.PositionSnapshot actorSnapshot = voiceModule.getCachedPosition(actor.getUuid());

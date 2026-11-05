@@ -24,38 +24,16 @@ import java.util.logging.Level;
 
 /**
  * The link gesture: crouch + left-click (attack) on a player while holding
- * a Voice Stone toggles the target's link on that stone. The strike is
- * cancelled, so the gesture is harmless — no damage, no knockback.
- *
- * <p>The damage pipeline is server-authoritative (unlike the interaction
- * system, which is client-authoritative and gates player targets — see the
- * M5 notes): the {@link Damage} event fires on the HIT entity for every
- * strike, and the attacker rides in {@code Damage.EntitySource}. Anything
- * that is not the gesture is left untouched: non-entity damage, non-player
- * attacker or target, attacker not crouching or without a stone in hand —
- * the event is only cancelled when a link is actually toggled, normal
- * combat included.
- *
- * <p>Known refinement, kept simple for now: projectile hits also carry an
- * EntitySource — shooting while crouched with a stone in hand would toggle
- * a link. Filter by {@code Damage.getCause()} / the INTERACTION_TYPE meta
- * if that matters in playtesting.
+ * a Voice Stone toggles the target's link on that stone. The damage
+ * pipeline is server-authoritative, so the strike is cancelled for every
+ * recognized gesture — harmless, no damage, no knockback. Only the
+ * recognized gesture is cancelled; anything else (normal combat, PvE
+ * hits) is left untouched.
  */
 public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Damage> {
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
-
-    /**
-     * Feedback sounds: the toggle sounds play exactly as their
-     * SoundEvent assets define them — volume and pitch live in the
-     * asset JSON, the packet stays at neutral — while the
-     * mana-refusal sound supplements its asset with code-side
-     * decibels/semitones (0 = neutral for both, converted to the
-     * packet's linear rate via {@link AudioUtil}) to mark the
-     * failure. The ids, volume and pitch are tunables in the
-     * plugin config (M8).
-     */
 
     public LinkGestureSystem(HytaleLogger logger, HeldStoneTracker tracker) {
         super(Damage.class);
@@ -105,14 +83,11 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
     }
 
     /**
-     * Plays a feedback sound 3d at the holder — everyone within
-     * earshot hears the stone react, the holder like anyone else
-     * (decided: every feedback sound is 3d, refusal included; a 2d
-     * copy alongside would double the holder's playback). The
-     * neutral overload plays the sound as its asset defines it;
-     * the refusal adds code-side decibels/semitones to mark the
-     * failed gesture. Falls back to 2d-to-player when the holder's
-     * transform is unreadable — never lose the feedback.
+     * Plays a feedback sound 3d at the holder — everyone within earshot
+     * hears the stone react — falling back to 2d-to-player when the
+     * holder's transform is unreadable. Volume and pitch are decibels and
+     * semitones: AudioUtil converts them to the packet's linear rate, and
+     * passing dB/semitone values raw produces silence.
      */
     private void playFeedbackSound(PlayerRef holder, String soundEventId, Store<EntityStore> store) {
         playFeedbackSound(holder, soundEventId, 0.0f, 0.0f, store);
@@ -146,11 +121,6 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
         );
     }
 
-    /**
-     * The crouch half of the gesture, read from the attacker's movement
-     * input component. Null-guarded: an absent component means "not
-     * crouching", the gesture simply does not apply.
-     */
     private boolean isCrouching(PlayerRef player) {
         var movementStates = player.getComponentConcurrent(MovementStatesComponent.getComponentType());
 
@@ -162,10 +132,9 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
     }
 
     /**
-     * Flips the link on the stone, puts the new stack back in the hand
-     * that holds it, plays the toggle's feedback sound, and logs the
-     * transition. The store rides along as the sound util's component
-     * accessor.
+     * Consumes the mana cost, flips the link on the stone, writes the new
+     * stack back into the holding hand and plays the toggle's feedback
+     * sound.
      */
     private void toggleLink(PlayerRef holder, PlayerRef target, ItemStack stone, Store<EntityStore> store) {
         if (!ManaCosts.tryConsume(holder)) {
@@ -202,8 +171,6 @@ public final class LinkGestureSystem extends EntityEventSystem<EntityStore, Dama
             );
             return;
         }
-
-
 
         logger.at(Level.INFO).log(
                 "[VoiceStone] %s -> %s : %s on %s (%d links remaining)",

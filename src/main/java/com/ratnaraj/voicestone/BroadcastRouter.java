@@ -17,36 +17,16 @@ import java.util.UUID;
 /**
  * Routes the voice of a stone-holding speaker through the listeners' own
  * stones, positionally: the audio plays from the listener's stone, as if
- * the stone were the speaker. Two modes, decided in M5:
- *
- * <p>Links on the speaker's stone (targeted routing): the voice plays from
- * the linked players' stones, and nowhere else in the stone network. The
- * stone is a loudspeaker: anyone physically near a playing stone overhears,
- * mutual or one-way alike — there is no private channel (decided, revised
- * in M5: proximity to a stone always grants hearing, mirroring the
- * base-voice-chat principle that the plugin never removes a way to
- * hear). A linked player who holds no stone hears nothing through any
- * stone (the stone is the playback device, decided). The speaker's own
- * proximity delivery is never touched — the plugin never alters the base
- * voice chat (decided).
- *
- * <p>No links on the speaker's stone (broadcast): the voice plays from the
- * stone of every holder whose stone accepts the broadcast — the decided
- * reception filter is a mutual contract (prudent closure): an unlinked
- * stone hears every broadcast; a stone whose every link is mutual hears
- * only targeted deliveries and refuses third-party broadcasts; any
- * non-mutual or unverifiable link (partner not holding their stone)
- * keeps the stone's reception open. The speaker's original proximity
- * delivery is never touched in this mode: physical hearing always works
- * for everyone.
- *
- * <p>Delivery is hand-crafted {@link RelayedVoiceData} packets rather than
- * native speakers: a hand-built packet carries the speaker's identity
- * (M4.1). The opus bytes, sequence and timestamp are extracted from the
- * frame once and passed explicitly to the packet builder. The router
- * never calls drop() — decided: the Voice Stone must not alter the base
- * voice chat in any mode. The router is stateless: one packet per frame
- * per (speaker, listener) pair, no stream bookkeeping.
+ * the stone were the speaker. With links on the speaker's stone, the voice
+ * plays from the linked players' stones and nowhere else in the network
+ * (the stone is a loudspeaker — anyone near a playing stone overhears,
+ * and a linked player without a stone hears nothing). Without links, it
+ * plays from every holder's stone whose reception filter accepts the
+ * broadcast — a fully mutual stone refuses third-party broadcasts, any
+ * non-mutual or unverifiable link keeps reception open. The speaker's
+ * original proximity delivery is never touched in any mode, and the
+ * router is stateless: one hand-built packet per frame per (speaker,
+ * listener) pair, no stream bookkeeping.
  */
 public final class BroadcastRouter {
 
@@ -58,10 +38,7 @@ public final class BroadcastRouter {
         this.tracker = tracker;
     }
 
-    /**
-     * Handles one voice frame, called from the voice module's interceptor
-     * thread of the speaking player.
-     */
+    /** Handles one voice frame, called from the voice module's interceptor thread. */
     public void onFrame(PlayerVoiceFrame frame) {
         UUID speaker = frame.speaker().getUuid();
 
@@ -96,15 +73,7 @@ public final class BroadcastRouter {
         }
     }
 
-    /**
-     * Targeted routing: the speaker's stone has links, the voice plays from
-     * the linked players' stones — and nowhere else in the stone network.
-     * The frame's own proximity delivery is left fully untouched: the
-     * Voice Stone never alters the base voice chat (decided), so the
-     * speaker is still heard normally by anyone physically near them; the
-     * client's speakerId+sequence dedup keeps a linked listener standing
-     * next to the speaker from hearing them twice.
-     */
+    /** Targeted routing: each linked listener hears from their own stone, and no stone-holder is excluded from it. */
     private void routeToLinks(
             byte[] opus,
             short sequence,
@@ -133,11 +102,7 @@ public final class BroadcastRouter {
         }
     }
 
-    /**
-     * Broadcast routing: the speaker's stone has no links, the voice plays
-     * from the stone of every holder whose stone accepts this speaker. The
-     * speaker's original proximity delivery is never touched here.
-     */
+    /** Broadcast routing, filtered by each listener stone's reception filter. */
     private void routeBroadcast(
             byte[] opus,
             short sequence,
@@ -176,14 +141,12 @@ public final class BroadcastRouter {
     }
 
     /**
-     * The decided reception filter (prudent closure — privacy is a full
-     * mutual contract): an unlinked stone hears every broadcast; a stone
-     * whose every link is mutual hears only its partners — and partners
-     * never broadcast (they hold linked stones), so a fully mutual stone
-     * refuses every third-party broadcast; any non-mutual or unverifiable
-     * link (the partner not holding their stone) keeps the stone's
-     * reception open. Targeted delivery is not filtered here — the filter
-     * only applies to broadcasts.
+     * The reception filter — privacy is a full mutual contract: a stone
+     * whose every link is mutual (verified live: a partner not holding
+     * their stone counts as non-mutual) refuses third-party broadcasts
+     * and hears only its partners' targeted deliveries; any non-mutual
+     * or unverifiable link keeps the stone's reception fully open. Only
+     * broadcasts are filtered, never targeted delivery.
      */
     private boolean receivesBroadcast(UUID listener, ItemStack listenerStone, UUID speaker) {
         List<UUID> links = StoneLinks.get(listenerStone);
@@ -204,14 +167,12 @@ public final class BroadcastRouter {
     }
 
     /**
-     * Builds the relay packet for one (speaker, listener) pair: the audio is
-     * positioned at the listener's stone, speakerId is the speaker's player
-     * UUID (identity at any distance) and entityId their network entity id
-     * (in-world indicator when loaded) — but only when the speaker is in
-     * the listener's world: network entity ids are per-world, so cross-world
-     * the client would resolve the id to an unrelated entity of the
-     * receiver's own world (observed: the listener seeing themselves as the
-     * speaker).
+     * Builds the relay packet for one (speaker, listener) pair, audio
+     * positioned at the listener's stone. The entityId is the speaker's
+     * network id only when they are in the listener's world: ids are
+     * per-world namespaces, and cross-world the client would resolve the
+     * foreign id to an unrelated entity — zeroed, identity rides on the
+     * speaker UUID alone.
      */
     private RelayedVoiceData buildPacket(
             byte[] opus,
@@ -240,12 +201,7 @@ public final class BroadcastRouter {
                 opus);
     }
 
-    /**
-     * Writes one packet to each recipient's voice stream. A dumb pipe: the
-     * caller decides who the recipients are (proximity around a stone, or
-     * a single linked listener) and is responsible for excluding the
-     * speaker — the packet's speakerId carries no such rule.
-     */
+    /** Writes one packet to each recipient's voice stream; the caller excludes the speaker from the recipients. */
     private void deliver(RelayedVoiceData packet, Set<UUID> recipients) {
         for (UUID recipient : recipients) {
             PlayerRef player = Universe.get().getPlayer(recipient);
@@ -261,9 +217,10 @@ public final class BroadcastRouter {
     }
 
     /**
-     * Players in the same world as the stone and within the module's hearing
-     * distance of it — the same selection the native router applies around a
-     * positional speaker. The stone holder is at distance zero, always in.
+     * Players in the same world as the stone and within the module's
+     * hearing distance of it — the same selection the native router
+     * applies around a positional speaker (custom packets bypass it, so
+     * this is what keeps the loudspeaker leak working).
      */
     private Set<UUID> nearbyPlayers(VoiceModule.PositionSnapshot stone) {
         double maxDistanceSquared = squared(voiceModule.getMaxHearingDistance());

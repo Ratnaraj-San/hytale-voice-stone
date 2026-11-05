@@ -43,12 +43,14 @@ public class VoiceStone extends JavaPlugin {
             return;
         }
 
-        ManaDrainSystem manaDrainSystem = new ManaDrainSystem(getLogger(), heldStoneTracker, voiceModule, speakingTracker);
+        ManaDrainSystem manaDrainSystem = new ManaDrainSystem(heldStoneTracker, voiceModule, speakingTracker);
 
         registerEvents(heldStoneTracker, manaDrainSystem);
 
         BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
-        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter, speakingTracker));
+        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(
+                new VoiceFrameInterceptor(broadcastRouter, speakingTracker)
+        );
 
         getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
         getEntityStoreRegistry().registerSystem(manaDrainSystem);

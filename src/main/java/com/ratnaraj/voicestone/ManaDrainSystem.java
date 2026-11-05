@@ -5,7 +5,6 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -24,14 +23,19 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
+/**
+ * Drains mana from every stone holder while they actively transmit: one
+ * drain per full second of continuous transmission, amount from the config.
+ * A drain that reaches zero freezes regeneration for the configured window
+ * via the stat map's RAISE suppression — flicker-free because suppression
+ * rejects the regen writes entirely instead of clamping after the fact.
+ */
 public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
     /** The drain interval is fixed at one second (decided) — only the amount is tunable. */
     private static final int MANA_DRAIN_FREQUENCY_MS = 1000;
 
-    private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
     private final VoiceModule voiceModule;
     private final SpeakingTracker speakingTracker;
@@ -39,11 +43,7 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
     private final Map<UUID, Instant> chrono = new ConcurrentHashMap<>();
     private final Map<UUID, Instant> zeroLocks = new ConcurrentHashMap<>();
 
-    /** Diagnostic phase per player: gates log once per transition, not per tick. */
-    private final Map<UUID, String> phase = new ConcurrentHashMap<>();
-
-    public ManaDrainSystem(HytaleLogger logger, HeldStoneTracker tracker, VoiceModule voiceModule, SpeakingTracker speakingTracker) {
-        this.logger = logger;
+    public ManaDrainSystem(HeldStoneTracker tracker, VoiceModule voiceModule, SpeakingTracker speakingTracker) {
         this.tracker = tracker;
         this.voiceModule = voiceModule;
         this.speakingTracker = speakingTracker;
@@ -76,49 +76,12 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
         Instant zeroLock = zeroLocks.get(playerUuid);
 
-        if (zeroLock != null) {
-            if (now.isAfter(zeroLock)) {
-                zeroLocks.remove(playerUuid);
-                stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, false);
-
-                logger.at(Level.FINE).log("[ManaDrain] %s: mana regeneration resumed", player.getUsername());
-            }
+        if (zeroLock != null && now.isAfter(zeroLock)) {
+            zeroLocks.remove(playerUuid);
+            stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, false);
         }
 
-        ItemStack stone = tracker.getHeldStone(playerUuid);
-
-        if (stone == null) {
-            enterPhase(player, "no stone in hand");
-            chrono.remove(playerUuid);
-            return;
-        }
-
-        VoicePlayerState state = voiceModule.getPlayerState(playerUuid);
-
-        if (state == null) {
-            enterPhase(player, "no voice player state");
-            chrono.remove(playerUuid);
-            return;
-        }
-
-        boolean isRoutingDisabled = state.isRoutingDisabled();
-        boolean isVoiceEnabled = voiceModule.isVoiceEnabled();
-        boolean isTransmitting = speakingTracker.isTransmitting(playerUuid);
-
-        if (!isVoiceEnabled) {
-            enterPhase(player, "voice chat disabled");
-            chrono.remove(playerUuid);
-            return;
-        }
-
-        if (isRoutingDisabled) {
-            enterPhase(player, "voice routing disabled");
-            chrono.remove(playerUuid);
-            return;
-        }
-
-        if (!isTransmitting) {
-            enterPhase(player, "mic silent");
+        if (!isTransmitting(playerUuid)) {
             chrono.remove(playerUuid);
             return;
         }
@@ -126,42 +89,18 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
         Instant start = chrono.get(playerUuid);
 
         if (start == null) {
-            if (enterPhase(player, "timer started")) {
-                EntityStatValue mana = manaIndex < 0 ? null : stats.get(manaIndex);
-                logger.at(Level.FINE).log(
-                        "[ManaDrain] mana stat index=%d, current=%s",
-                        manaIndex,
-                        mana == null ? "MISSING" : String.valueOf(mana.get())
-                );
-            }
             chrono.put(playerUuid, now);
             return;
         }
 
         if (Duration.between(start, now).toMillis() >= MANA_DRAIN_FREQUENCY_MS) {
-            float drainAmount = VoiceStoneConfig.getManaDrainPerSecond();
-
-            stats.subtractStatValue(manaIndex, drainAmount);
+            stats.subtractStatValue(manaIndex, VoiceStoneConfig.getManaDrainPerSecond());
 
             EntityStatValue mana = stats.get(manaIndex);
 
-            logger.at(Level.FINE).log(
-                    "[ManaDrain] %s drained %.1f mana, now %s",
-                    player.getUsername(),
-                    drainAmount,
-                    mana == null ? "?" : String.valueOf(mana.get())
-            );
-
             if (mana != null && mana.get() <= 0.0f) {
-                Instant previousLock = zeroLocks.put(
-                        playerUuid,
-                        now.plusMillis(VoiceStoneConfig.getManaZeroRegenLockMillis())
-                );
+                zeroLocks.put(playerUuid, now.plusMillis(VoiceStoneConfig.getManaZeroRegenLockMillis()));
                 stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, true);
-
-                if (previousLock == null) {
-                    logger.at(Level.FINE).log("[ManaDrain] %s: mana exhausted, regeneration frozen", player.getUsername());
-                }
             }
 
             chrono.put(playerUuid, now);
@@ -169,18 +108,17 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * Logs a diagnostic phase change at INFO, exactly once per transition —
-     * a per-tick log would spam the console ~20 times per second.
+     * A fresh intercepted frame implies voice chat enabled and a live mic
+     * stream — empty frames are rejected upstream of the interceptors.
      */
-    private boolean enterPhase(PlayerRef player, String phaseName) {
-        String previous = phase.put(player.getUuid(), phaseName);
+    private boolean isTransmitting(UUID playerUuid) {
+        VoicePlayerState state = voiceModule.getPlayerState(playerUuid);
 
-        if (previous != null && previous.equals(phaseName)) {
-            return false;
-        }
-
-        logger.at(Level.FINE).log("[ManaDrain] %s: %s", player.getUsername(), phaseName);
-        return true;
+        return voiceModule.isVoiceEnabled()
+                && state != null
+                && !state.isRoutingDisabled()
+                && speakingTracker.isTransmitting(playerUuid)
+                && tracker.getHeldStone(playerUuid) != null;
     }
 
     public void clear(UUID uuid) {
