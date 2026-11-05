@@ -28,5 +28,9 @@
     ]
   },
   "SoundEventId": "SFX_Gem_Emit_Loop",
-  "ItemSoundSetId": "ISS_Items_Gems"
+  "ItemSoundSetId": "ISS_Items_Gems",
+  "Light": {
+    "Color": "#5b6",
+    "Radius": 1
+  }
 }

@@ -2,5 +2,12 @@
   "Parent": "Voice_Stone_Sapphire",
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Sapphire_Linked.png",
   "Texture": "Resources/VoiceStone/Voice_Stone_Sapphire_Linked.png",
-  "Quality": "Rare"
+  "Quality": "Rare",
+  "ParticleColor": "#3f77ec",
+  "Particles": [
+    {
+      "Color": "#64c1ff",
+      "SystemId": "Block_Gem_Sparks"
+    }
+  ]
 }

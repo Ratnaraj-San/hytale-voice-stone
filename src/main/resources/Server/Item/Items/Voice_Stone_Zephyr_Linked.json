@@ -2,5 +2,12 @@
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Zephyr_Linked.png",
   "Parent": "Voice_Stone_Zephyr",
   "Texture": "Resources/VoiceStone/Voice_Stone_Zephyr_Linked.png",
-  "Quality": "Rare"
+  "Quality": "Rare",
+  "ParticleColor": "#06e8f7",
+  "Particles": [
+    {
+      "Color": "#9cebff",
+      "SystemId": "Block_Gem_Sparks"
+    }
+  ]
 }
