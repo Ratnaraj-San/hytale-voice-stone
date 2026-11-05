@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * ItemStack metadata under two keys: "links", a BSON array of player
  * UUID strings — the source of truth, what the router follows — and
  * "linkNames", a BSON document of uuid-to-display-name recorded at link
- * time, so the list command can show who a link belongs to even when the
+ * time, so the tooltip can show who a link belongs to even when the
  * player is offline. The online lookup stays the primary source and the
  * recorded name is the fallback; a renamed player shows the stale
  * recorded name until they are re-linked. Links belong to the stone, not
@@ -126,16 +126,6 @@ public final class StoneLinks {
         ItemStack stackWithName = withName(stackWithLinks, target, null);
 
         return withVariant(withTooltip(stackWithName));
-    }
-
-    /**
-     * Returns a copy of the stone with every link and recorded name
-     * removed — both metadata keys are dropped.
-     */
-    public static ItemStack clear(ItemStack stack) {
-        ItemStack stackWithMetadata = stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
-
-        return withVariant(withTooltip(stackWithMetadata));
     }
 
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
