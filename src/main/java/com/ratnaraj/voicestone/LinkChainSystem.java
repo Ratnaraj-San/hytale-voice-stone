@@ -1,5 +1,6 @@
 package com.ratnaraj.voicestone;
 
+import com.hypixel.hytale.common.util.AudioUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
@@ -9,16 +10,20 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.InteractionModule;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -59,6 +64,21 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     private static final double REACH = 4.0;
     private static final double REACH_SQUARED = REACH * REACH;
     private static final double AIM_CONE_DEGREES = 30.0;
+
+    /**
+     * Feedback sound ids: the toggle sounds play exactly as their
+     * SoundEvent assets define them — volume and pitch live in the
+     * asset JSON, the packet stays at neutral — while the
+     * mana-refusal sound supplements its asset with code-side
+     * decibels/semitones (0 = neutral for both, converted to the
+     * packet's linear rate via {@link AudioUtil}) to mark the
+     * failure. All config-file candidates (M8).
+     */
+    private static final String UNLINK_SOUND_EVENT = "SFX_VoiceStone_Unlink";
+    private static final String LINK_SOUND_EVENT = "SFX_VoiceStone_Link";
+    private static final String REFUSAL_SOUND_EVENT = "SFX_Crystal_Build";
+    private static final float REFUSAL_VOLUME_DB = 0.0f;
+    private static final float REFUSAL_PITCH_SEMITONES = -12.0f;
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -119,16 +139,60 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
             if (chain.getType() == InteractionType.Secondary
                     && chain.getRootInteraction() != null
                     && LINK_ROOT_ID.equals(chain.getRootInteraction().getId())) {
-                handleGesture(player, stone);
+                handleGesture(player, stone, store);
             }
         }
     }
 
     /**
+     * Plays a feedback sound 3d at the holder — everyone within
+     * earshot hears the stone react, the holder like anyone else
+     * (decided: every feedback sound is 3d, refusal included; a 2d
+     * copy alongside would double the holder's playback). The
+     * neutral overload plays the sound as its asset defines it;
+     * the refusal adds code-side decibels/semitones to mark the
+     * failed gesture. Falls back to 2d-to-player when the holder's
+     * transform is unreadable — never lose the feedback.
+     */
+    private void playFeedbackSound(PlayerRef holder, String soundEventId, Store<EntityStore> store) {
+        playFeedbackSound(holder, soundEventId, 0.0f, 0.0f, store);
+    }
+
+    private void playFeedbackSound(PlayerRef holder, String soundEventId,
+                                    float volumeDb, float pitchSemitones,
+                                    Store<EntityStore> store) {
+        TransformComponent transform = holder.getComponentConcurrent(TransformComponent.getComponentType());
+        Vector3d position = transform == null ? null : transform.getPosition();
+
+        float volume = AudioUtil.decibelsToLinearGain(volumeDb);
+        float pitch = AudioUtil.semitonesToLinearPitch(pitchSemitones);
+
+        if (position == null) {
+            SoundUtil.playSoundEvent2dToPlayer(
+                    holder,
+                    SoundEvent.getAssetMap().getIndex(soundEventId),
+                    SoundCategory.SFX,
+                    volume, pitch
+            );
+            return;
+        }
+
+        SoundUtil.playSoundEvent3d(
+                SoundEvent.getAssetMap().getIndex(soundEventId),
+                SoundCategory.SFX,
+                position.x, position.y, position.z,
+                volume, pitch,
+                store
+        );
+    }
+
+    /**
      * The gesture itself: crouch is required, the target is the nearest
      * other player within reach, the toggle is the shared link machinery.
+     * The store rides along for the 3d feedback sound's component
+     * accessor.
      */
-    private void handleGesture(PlayerRef holder, ItemStack stone) {
+    private void handleGesture(PlayerRef holder, ItemStack stone, Store<EntityStore> store) {
         if (!isCrouching(holder)) {
             return;
         }
@@ -141,16 +205,21 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (!ManaCosts.tryConsume(holder)) {
+            playFeedbackSound(holder, REFUSAL_SOUND_EVENT, REFUSAL_VOLUME_DB, REFUSAL_PITCH_SEMITONES, store);
+
             logger.at(Level.INFO).log(
                     "[VoiceStone] %s's link gesture refused: not enough mana",
                     holder.getUsername()
             );
+
             return;
         }
 
         boolean wasLinked = StoneLinks.get(stone).contains(target.getUuid());
 
         ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
+
+        playFeedbackSound(holder, wasLinked ? UNLINK_SOUND_EVENT : LINK_SOUND_EVENT, store);
 
         if (!tracker.writeHeldStone(holder, linked)) {
             logger.at(Level.WARNING).log(

@@ -2,14 +2,19 @@ package com.ratnaraj.voicestone;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.item.config.metadata.ItemDisplayMetadata;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Reads and writes the link set of a Voice Stone, stored in the stone's
@@ -35,6 +40,7 @@ public final class StoneLinks {
 
     private static final String LINKS_KEY = "links";
     private static final String LINK_NAMES_KEY = "linkNames";
+    private static final String LINKED_ITEM_SUFFIX = "_Linked";
 
     /** Codec for the stored link set: a BSON array of UUID strings. */
     private static final ArrayCodec<UUID> LINKS_CODEC = new ArrayCodec<>(Codec.UUID_STRING, UUID[]::new);
@@ -102,7 +108,10 @@ public final class StoneLinks {
             links.add(target);
         }
 
-        return withName(withLinks(stack, links), target, name);
+        ItemStack stackWithLinks = withLinks(stack, links);
+        ItemStack stackWithName = withName(stackWithLinks, target, name);
+
+        return withVariant(withTooltip(stackWithName));
     }
 
     /**
@@ -113,7 +122,10 @@ public final class StoneLinks {
         List<UUID> links = new ArrayList<>(get(stack));
         links.remove(target);
 
-        return withName(withLinks(stack, links), target, null);
+        ItemStack stackWithLinks = withLinks(stack, links);
+        ItemStack stackWithName = withName(stackWithLinks, target, null);
+
+        return withVariant(withTooltip(stackWithName));
     }
 
     /**
@@ -121,7 +133,9 @@ public final class StoneLinks {
      * removed — both metadata keys are dropped.
      */
     public static ItemStack clear(ItemStack stack) {
-        return stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
+        ItemStack stackWithMetadata = stack.withMetadata(LINKS_KEY, null).withMetadata(LINK_NAMES_KEY, null);
+
+        return withVariant(withTooltip(stackWithMetadata));
     }
 
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
@@ -163,5 +177,70 @@ public final class StoneLinks {
         }
 
         return stack.withMetadata(LINK_NAMES_KEY, updated);
+    }
+
+    private static ItemStack withTooltip(ItemStack stack) {
+        List<UUID> links = get(stack);
+
+        if (links.isEmpty()) {
+            return stack.withMetadata(ItemDisplayMetadata.KEY, (BsonValue) null);
+        }
+
+        String names = links.stream()
+                .map(link -> {
+                    String name = getName(stack, link);
+                    return name == null ? "?" : name;
+                })
+                .collect(Collectors.joining(", "));
+
+        ItemDisplayMetadata display = new ItemDisplayMetadata();
+
+        Message baseDescription = Message.translation("server.items.Voice_Stone_Emerald.description");
+
+        Message linksDescription = Message
+                .translation("server.voicestone.tooltip.links")
+                .param("names", names)
+                .color(Color.WHITE);
+
+        Message newDescription = Message.join(
+                baseDescription,
+                linksDescription
+        );
+
+        display.setDescription(newDescription);
+
+        return stack.withMetadata(ItemDisplayMetadata.KEYED_CODEC, display);
+    }
+
+    /**
+     * Returns the stone under the item id matching its link state: a
+     * linked stone uses the _Linked visual variant (same base assets,
+     * different Texture and Icon), an unlinked one the base item. The
+     * metadata document travels whole into the new stack — the id
+     * constructor is the only route to a different item, and its single
+     * metadata read is the deprecated clone the swap costs. A target id
+     * that is not a known Voice Stone (assets missing or renamed) leaves
+     * the stack untouched rather than forging an invalid item.
+     */
+    private static ItemStack withVariant(ItemStack stack) {
+        boolean linked = !get(stack).isEmpty();
+
+        String id = stack.getItemId();
+        boolean linkedId = id.endsWith(LINKED_ITEM_SUFFIX);
+
+        if (linked == linkedId) {
+            return stack;
+        }
+
+        String baseId = linkedId
+                ? id.substring(0, id.length() - LINKED_ITEM_SUFFIX.length())
+                : id;
+        String targetId = linked ? baseId + LINKED_ITEM_SUFFIX : baseId;
+
+        if (!VoiceStoneItems.IDS.contains(targetId)) {
+            return stack;
+        }
+
+        return new ItemStack(targetId, stack.getQuantity(), stack.getMetadata());
     }
 }

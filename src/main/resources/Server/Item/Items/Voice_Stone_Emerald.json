@@ -8,9 +8,6 @@
   "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
   "PlayerAnimationsId": "Item",
   "MaxStack": 1,
-  "Utility": {
-    "Usable": true
-  },
   "Interactions": {
     "Secondary": "Root_VoiceStone_Link"
   },
@@ -26,5 +23,11 @@
       -6,
       -13.5
     ]
+  },
+  "SoundEventId": "SFX_Gem_Emit_Loop",
+  "ItemSoundSetId": "ISS_Items_Gems",
+  "Light": {
+    "Color": "#5b6",
+    "Radius": 1
   }
 }
