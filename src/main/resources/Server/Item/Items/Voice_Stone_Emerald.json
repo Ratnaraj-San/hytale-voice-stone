@@ -8,9 +8,6 @@
   "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
   "PlayerAnimationsId": "Item",
   "MaxStack": 1,
-  "Utility": {
-    "Usable": true
-  },
   "Interactions": {
     "Secondary": "Root_VoiceStone_Link"
   },
