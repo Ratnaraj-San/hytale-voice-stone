@@ -34,7 +34,6 @@ public class VoiceStone extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new ActiveSlotChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
-        getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker));
 
         VoiceModule voiceModule = VoiceModule.get();
 
@@ -52,7 +51,7 @@ public class VoiceStone extends JavaPlugin {
                 new VoiceFrameInterceptor(broadcastRouter, speakingTracker)
         );
 
-        getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
+        getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker, voiceModule));
         getEntityStoreRegistry().registerSystem(manaDrainSystem);
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
