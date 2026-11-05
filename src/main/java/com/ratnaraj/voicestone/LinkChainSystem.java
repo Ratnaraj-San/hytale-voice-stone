@@ -66,19 +66,15 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
     private static final double AIM_CONE_DEGREES = 30.0;
 
     /**
-     * Feedback sound ids: the toggle sounds play exactly as their
+     * Feedback sounds: the toggle sounds play exactly as their
      * SoundEvent assets define them — volume and pitch live in the
      * asset JSON, the packet stays at neutral — while the
      * mana-refusal sound supplements its asset with code-side
      * decibels/semitones (0 = neutral for both, converted to the
      * packet's linear rate via {@link AudioUtil}) to mark the
-     * failure. All config-file candidates (M8).
+     * failure. The ids, volume and pitch are tunables in the
+     * plugin config (M8).
      */
-    private static final String UNLINK_SOUND_EVENT = "SFX_VoiceStone_Unlink";
-    private static final String LINK_SOUND_EVENT = "SFX_VoiceStone_Link";
-    private static final String REFUSAL_SOUND_EVENT = "SFX_Crystal_Build";
-    private static final float REFUSAL_VOLUME_DB = 0.0f;
-    private static final float REFUSAL_PITCH_SEMITONES = -12.0f;
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -205,7 +201,13 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (!ManaCosts.tryConsume(holder)) {
-            playFeedbackSound(holder, REFUSAL_SOUND_EVENT, REFUSAL_VOLUME_DB, REFUSAL_PITCH_SEMITONES, store);
+            playFeedbackSound(
+                    holder,
+                    VoiceStoneConfig.getRefusalSoundEvent(),
+                    VoiceStoneConfig.getRefusalVolumeDb(),
+                    VoiceStoneConfig.getRefusalPitchSemitones(),
+                    store
+            );
 
             logger.at(Level.INFO).log(
                     "[VoiceStone] %s's link gesture refused: not enough mana",
@@ -219,7 +221,11 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
 
         ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
 
-        playFeedbackSound(holder, wasLinked ? UNLINK_SOUND_EVENT : LINK_SOUND_EVENT, store);
+        playFeedbackSound(
+                holder,
+                wasLinked ? VoiceStoneConfig.getUnlinkSoundEvent() : VoiceStoneConfig.getLinkSoundEvent(),
+                store
+        );
 
         if (!tracker.writeHeldStone(holder, linked)) {
             logger.at(Level.WARNING).log(

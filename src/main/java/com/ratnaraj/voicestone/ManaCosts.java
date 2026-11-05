@@ -11,8 +11,6 @@ import java.util.UUID;
 
 public final class ManaCosts {
 
-    private static final float MANA_LINK_COST = 30.0f;
-
     private ManaCosts() {
     }
 
@@ -31,6 +29,8 @@ public final class ManaCosts {
 
 
     public static boolean tryConsume(PlayerRef player) {
+        float linkCost = VoiceStoneConfig.getManaLinkCost();
+
         ManaStat mana = resolve(player);
 
         if (mana == null) {
@@ -39,11 +39,11 @@ public final class ManaCosts {
 
         EntityStatValue value = mana.stats().get(mana.index());
 
-        if (value == null || value.get() < MANA_LINK_COST) {
+        if (value == null || value.get() < linkCost) {
             return false;
         }
 
-        mana.stats().subtractStatValue(mana.index(), MANA_LINK_COST);
+        mana.stats().subtractStatValue(mana.index(), linkCost);
         return true;
     }
 

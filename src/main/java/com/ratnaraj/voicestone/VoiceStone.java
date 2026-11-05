@@ -27,6 +27,8 @@ public class VoiceStone extends JavaPlugin {
 
     @Override
     protected void start() {
+        VoiceStoneConfig.load(getLogger(), getDataDirectory());
+
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
         SpeakingTracker speakingTracker = new SpeakingTracker();
 

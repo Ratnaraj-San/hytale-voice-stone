@@ -28,9 +28,8 @@ import java.util.logging.Level;
 
 public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
 
-    private static final float MANA_DRAIN_AMOUNT = 5.0f;
+    /** The drain interval is fixed at one second (decided) — only the amount is tunable. */
     private static final int MANA_DRAIN_FREQUENCY_MS = 1000;
-    private static final long MANA_ZERO_LOCK_MS = 3000;
 
     private final HytaleLogger logger;
     private final HeldStoneTracker tracker;
@@ -140,19 +139,24 @@ public final class ManaDrainSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (Duration.between(start, now).toMillis() >= MANA_DRAIN_FREQUENCY_MS) {
-            stats.subtractStatValue(manaIndex, MANA_DRAIN_AMOUNT);
+            float drainAmount = VoiceStoneConfig.getManaDrainPerSecond();
+
+            stats.subtractStatValue(manaIndex, drainAmount);
 
             EntityStatValue mana = stats.get(manaIndex);
 
             logger.at(Level.FINE).log(
                     "[ManaDrain] %s drained %.1f mana, now %s",
                     player.getUsername(),
-                    MANA_DRAIN_AMOUNT,
+                    drainAmount,
                     mana == null ? "?" : String.valueOf(mana.get())
             );
 
             if (mana != null && mana.get() <= 0.0f) {
-                Instant previousLock = zeroLocks.put(playerUuid, now.plusMillis(MANA_ZERO_LOCK_MS));
+                Instant previousLock = zeroLocks.put(
+                        playerUuid,
+                        now.plusMillis(VoiceStoneConfig.getManaZeroRegenLockMillis())
+                );
                 stats.setStatChangeSuppressed(manaIndex, StatChangeDirection.RAISE, true);
 
                 if (previousLock == null) {
