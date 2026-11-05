@@ -1,6 +1,5 @@
 package com.ratnaraj.voicestone;
 
-import com.hypixel.hytale.common.util.AudioUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
@@ -10,19 +9,15 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.SoundCategory;
-import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.InteractionModule;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -113,45 +108,6 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         }
     }
 
-    /**
-     * Plays a feedback sound 3d at the holder — everyone within earshot
-     * hears the stone react — falling back to 2d-to-player when the
-     * holder's transform is unreadable. Volume and pitch are decibels and
-     * semitones: AudioUtil converts them to the packet's linear rate, and
-     * passing dB/semitone values raw produces silence.
-     */
-    private void playFeedbackSound(PlayerRef holder, String soundEventId, Store<EntityStore> store) {
-        playFeedbackSound(holder, soundEventId, 0.0f, 0.0f, store);
-    }
-
-    private void playFeedbackSound(PlayerRef holder, String soundEventId,
-                                    float volumeDb, float pitchSemitones,
-                                    Store<EntityStore> store) {
-        TransformComponent transform = holder.getComponentConcurrent(TransformComponent.getComponentType());
-        Vector3d position = transform == null ? null : transform.getPosition();
-
-        float volume = AudioUtil.decibelsToLinearGain(volumeDb);
-        float pitch = AudioUtil.semitonesToLinearPitch(pitchSemitones);
-
-        if (position == null) {
-            SoundUtil.playSoundEvent2dToPlayer(
-                    holder,
-                    SoundEvent.getAssetMap().getIndex(soundEventId),
-                    SoundCategory.SFX,
-                    volume, pitch
-            );
-            return;
-        }
-
-        SoundUtil.playSoundEvent3d(
-                SoundEvent.getAssetMap().getIndex(soundEventId),
-                SoundCategory.SFX,
-                position.x, position.y, position.z,
-                volume, pitch,
-                store
-        );
-    }
-
     private void handleGesture(PlayerRef holder, ItemStack stone, Store<EntityStore> store) {
         if (!isCrouching(holder)) {
             return;
@@ -164,7 +120,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (!ManaCosts.tryConsume(holder)) {
-            playFeedbackSound(
+            FeedbackSound.play(
                     holder,
                     VoiceStoneConfig.getRefusalSoundEvent(),
                     VoiceStoneConfig.getRefusalVolumeDb(),
@@ -184,7 +140,7 @@ public final class LinkChainSystem extends EntityTickingSystem<EntityStore> {
 
         ItemStack linked = StoneLinks.toggle(stone, target.getUuid(), target.getUsername());
 
-        playFeedbackSound(
+        FeedbackSound.play(
                 holder,
                 wasLinked ? VoiceStoneConfig.getUnlinkSoundEvent() : VoiceStoneConfig.getLinkSoundEvent(),
                 store
