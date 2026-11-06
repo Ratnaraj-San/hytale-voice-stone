@@ -1,13 +1,31 @@
 {
-  "Parent": "Voice_Stone_Sapphire",
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Sapphire_Linked.png",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Sapphire_Linked.png",
+  "Parent": "Voice_Stone_Sapphire",
   "Quality": "Rare",
-  "ParticleColor": "#3f77ec",
-  "Particles": [
-    {
-      "Color": "#64c1ff",
-      "SystemId": "Block_Gem_Sparks"
-    }
-  ]
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Sapphire_Linked.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone",
+    "ParticleColor": "#3f77ec",
+    "Particles": [
+      {
+        "Color": "#64c1ff",
+        "SystemId": "Block_Gem_Sparks"
+      }
+    ]
+  }
 }

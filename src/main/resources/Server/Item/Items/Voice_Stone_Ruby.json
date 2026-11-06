@@ -4,23 +4,24 @@
   },
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Ruby.png",
   "Parent": "Voice_Stone_Emerald",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Ruby.png",
-  "Quality": "Rare",
-  "IconProperties": {
-    "Scale": 0.58823,
-    "Rotation": [
-      22,
-      111,
-      0
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Ruby.png",
+        "Weight": 1
+      }
     ],
-    "Translation": [
-      -6,
-      -13.5
-    ]
-  },
-  "Light": {
-    "Color": "#b75",
-    "Radius": 1
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone"
   },
   "Recipe": {
     "BenchRequirement": [
@@ -51,5 +52,22 @@
     ],
     "TimeSeconds": 5,
     "RequiredMemoriesLevel": 3
+  },
+  "Quality": "Rare",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22,
+      111,
+      0
+    ],
+    "Translation": [
+      -6,
+      -13.5
+    ]
+  },
+  "Light": {
+    "Color": "#b75",
+    "Radius": 1
   }
 }

@@ -1,13 +1,31 @@
 {
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Emerald_Linked.png",
   "Parent": "Voice_Stone_Emerald",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Emerald_Linked.png",
   "Quality": "Rare",
-  "ParticleColor": "#1fcd3a",
-  "Particles": [
-    {
-      "Color": "#60d682",
-      "SystemId": "Block_Gem_Sparks"
-    }
-  ]
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Emerald_Linked.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone",
+    "ParticleColor": "#1fcd3a",
+    "Particles": [
+      {
+        "Color": "#60d682",
+        "SystemId": "Block_Gem_Sparks"
+      }
+    ]
+  }
 }
