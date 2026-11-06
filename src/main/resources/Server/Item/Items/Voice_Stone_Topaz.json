@@ -21,7 +21,11 @@
     "VariantRotation": "DoublePipe",
     "RandomRotation": "YawStep90",
     "BlockSoundSetId": "Crystal",
-    "PhysicalMaterialId": "Stone"
+    "PhysicalMaterialId": "Stone",
+    "Light": {
+      "Color": "#bb5",
+      "Radius": 0
+    }
   },
   "Quality": "Rare",
   "IconProperties": {

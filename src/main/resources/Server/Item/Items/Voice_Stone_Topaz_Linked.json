@@ -20,6 +20,10 @@
     "RandomRotation": "YawStep90",
     "BlockSoundSetId": "Crystal",
     "PhysicalMaterialId": "Stone",
+    "Light": {
+      "Color": "#bb5",
+      "Radius": 0
+    },
     "ParticleColor": "#ea8f2d",
     "Particles": [
       {
