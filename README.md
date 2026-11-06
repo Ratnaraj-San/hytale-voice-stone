@@ -1,26 +1,64 @@
 # Voice Stone
 
-Speak to and hear other players through a magical stone: the Voice Stone.
+Talk to players far away through a magic stone.
 
-## How it works
+Hold a Voice Stone and you can hear every other stone-carrier — wherever they are. Your voice plays from their stone, theirs from yours. No commands, no menus: everything is gestures.
 
-Place a Voice Stone in one of your utility slots or in your hotbar, and select it. You can carry several stones.
+---
 
-While your stone is your active item, you hear other stone-holders with positional audio from your own stone, as if they were standing on it.
+## Getting a Voice Stone
 
-### Voice Stone Links
+Craft it at the **Arcane bench**. The stones come in four colors — pick the one you like, they all work the same.
 
-Each stone has its own links.
+| Voice Stone | Gemstone | Essence of Life | Essence of the Void | Enkindled Sigil |
+|---|---|---|---|---|
+| Emerald | 1 Emerald | 10 | 10 | 1 |
+| Zephyr | 1 Zephyr | 10 | 10 | 1 |
+| Sapphire | 1 Sapphire | 10 | 10 | 1 |
+| Ruby | 1 Ruby | 10 | 10 | 1 |
 
-With your Voice Stone in hand, crouch + right-click a player to link your stone to them. Your voice then plays only from their stone. The link is directional:
+There are also Diamond, Topaz and Void variants, but since the gemstones cannot be obtained in Adventure, they are only in creative inventory.
 
-- One-way link: your voice plays from their stone and leaks — anyone standing near it overhears you
-- Mutual link: the channel becomes private, for their ears only
+---
 
-A linked stone changes appearance, and its tooltip lists the players it is linked to.
+## Using your stone
 
-### Mana cost
+Put a Voice Stone in your **hand** — that is all. While holding the stone:
 
-Holding a Voice Stone drains your mana every second, but only while your voice chat is enabled. Muting your microphone is not enough to stop the drain.
+- You hear every other stone-carrier through your own stone, even on the other side of the world or in another world.
+- They hear you the same way.
+- Anyone standing next to you still hears you normally — the stone never changes how the world hears you, it only carries you further.
 
-Linking or unlinking a player also costs mana.
+To stop carrying your voice or stop hearing others, just switch to another item.
+
+---
+
+## Linking stones
+
+A stone can be linked to specific players. Links belong to the stone, not to you: give the stone away, and its links go with it.
+
+### Link or unlink
+
+Hold the stone, look at a player (4 blocks reach), then **crouch + right-click**.
+The same gesture on a linked player unlinks them.
+
+- A link makes your voice play **from that player's stone only** — other stone-carriers no longer hear you through the network.
+- A linked stone **changes appearance**, and its **tooltip lists who** it is linked to.
+- The stone is a loudspeaker, not a whisper: anyone standing next to a playing stone overhears everything.
+
+### Private networks
+
+When two stones link to each other, other players can no longer hear the pair through any stone. People nearby, in person or next to the stones themselves, still can.
+
+---
+
+## Mana
+
+The Voice Stone feeds on your mana:
+
+- Holding the stone while **talking** drains a little mana every second. There is no drain if you are muted mic or your voice chat is off.
+- **Linking or unlinking** a player costs mana up front. If you don't have enough mana, the stone refuses.
+
+### Out of mana
+
+Your voice stops passing through any stone if your mana reaches 0. You will then have to wait for 3 seconds before it regenerates, but your stone keeps hearing for you: an empty tank seals the mouth, not the ears.
