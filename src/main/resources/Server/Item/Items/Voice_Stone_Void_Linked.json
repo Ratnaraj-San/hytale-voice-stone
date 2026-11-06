@@ -1,0 +1,13 @@
+{
+  "Icon": "Icons/ItemsGenerated/Voice_Stone_Void_Linked.png",
+  "Parent": "Voice_Stone_Void",
+  "Texture": "Resources/VoiceStone/Voice_Stone_Void_Linked.png",
+  "Quality": "Rare",
+  "ParticleColor": "#5e2bb4",
+  "Particles": [
+    {
+      "Color": "#c9b1ff",
+      "SystemId": "Block_Gem_Sparks"
+    }
+  ]
+}
