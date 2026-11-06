@@ -14,7 +14,13 @@ public final class VoiceStoneItems {
             "Voice_Stone_Sapphire",
             "Voice_Stone_Sapphire_Linked",
             "Voice_Stone_Ruby",
-            "Voice_Stone_Ruby_Linked"
+            "Voice_Stone_Ruby_Linked",
+            "Voice_Stone_Diamond",
+            "Voice_Stone_Diamond_Linked",
+            "Voice_Stone_Topaz",
+            "Voice_Stone_Topaz_Linked",
+            "Voice_Stone_Void",
+            "Voice_Stone_Void_Linked"
     );
 
     private VoiceStoneItems() {

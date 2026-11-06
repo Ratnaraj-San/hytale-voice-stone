@@ -1,6 +1,12 @@
+benchCategories.voiceStones = Pierres de voix
+
 items.Voice_Stone_Emerald.name = Pierre de voix en émeraude
 items.Voice_Stone_Emerald.description = Porte les voix entre porteurs de pierre.
 items.Voice_Stone_Zephyr.name = Pierre de voix en zéphyr
 items.Voice_Stone_Sapphire.name = Pierre de voix en saphir
 items.Voice_Stone_Ruby.name = Pierre de voix en rubis
+items.Voice_Stone_Diamond.name = Pierre de voix diamant
+items.Voice_Stone_Topaz.name = Pierre de voix topaze
+items.Voice_Stone_Void.name = Pierre de voix du néant
+
 voicestone.tooltip.links = \nLiée à {names}

@@ -1,6 +1,12 @@
+benchCategories.voiceStones = Voice Stones
+
 items.Voice_Stone_Emerald.name = Emerald Voice Stone
 items.Voice_Stone_Emerald.description = Carries voices between stone-holders.
 items.Voice_Stone_Zephyr.name = Zephyr Voice Stone
 items.Voice_Stone_Sapphire.name = Sapphire Voice Stone
 items.Voice_Stone_Ruby.name = Ruby Voice Stone
+items.Voice_Stone_Diamond.name = Diamond Voice Stone
+items.Voice_Stone_Topaz.name = Topaz Voice Stone
+items.Voice_Stone_Void.name = Void Voice Stone
+
 voicestone.tooltip.links = \nLinked to {names}
