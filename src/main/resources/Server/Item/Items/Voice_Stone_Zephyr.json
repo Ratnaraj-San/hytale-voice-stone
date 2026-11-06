@@ -21,5 +21,35 @@
   "Light": {
     "Color": "#5ab",
     "Radius": 1
+  },
+  "Recipe": {
+    "BenchRequirement": [
+      {
+        "Id": "Arcanebench",
+        "Categories": [
+          "Arcane_Voice_Stones"
+        ]
+      }
+    ],
+    "Input": [
+      {
+        "ItemId": "Rock_Gem_Zephyr",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Ingredient_Life_Essence",
+        "Quantity": 10
+      },
+      {
+        "ItemId": "Ingredient_Void_Essence",
+        "Quantity": 10
+      },
+      {
+        "ItemId": "Ingredient_Enkindled_Resource",
+        "Quantity": 1
+      }
+    ],
+    "TimeSeconds": 5,
+    "RequiredMemoriesLevel": 3
   }
 }
