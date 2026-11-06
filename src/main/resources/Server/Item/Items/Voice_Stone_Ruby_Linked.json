@@ -1,13 +1,31 @@
 {
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Ruby_Linked.png",
   "Parent": "Voice_Stone_Ruby",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Ruby_Linked.png",
   "Quality": "Rare",
-  "ParticleColor": "#cd2929",
-  "Particles": [
-    {
-      "Color": "#ffaa99",
-      "SystemId": "Block_Gem_Sparks"
-    }
-  ]
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Ruby_Linked.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone",
+    "ParticleColor": "#cd2929",
+    "Particles": [
+      {
+        "Color": "#ffaa99",
+        "SystemId": "Block_Gem_Sparks"
+      }
+    ]
+  }
 }

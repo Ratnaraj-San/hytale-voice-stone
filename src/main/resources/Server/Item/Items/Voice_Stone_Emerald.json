@@ -4,14 +4,32 @@
     "Description": "server.items.Voice_Stone_Emerald.description"
   },
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Emerald.png",
-  "Model": "Resources/VoiceStone/Voice_Stone.blockymodel",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
-  "PlayerAnimationsId": "Item",
+  "PlayerAnimationsId": "Torch",
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Emerald.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone"
+  },
   "MaxStack": 1,
   "Utility": {
     "Usable": true
   },
   "Interactions": {
+    "Primary": "Root_Unarmed_Attack_Swing_Left",
     "Secondary": "Root_VoiceStone_Link"
   },
   "Quality": "Rare",

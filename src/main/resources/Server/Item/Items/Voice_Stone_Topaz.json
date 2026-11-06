@@ -4,7 +4,25 @@
   },
   "Icon": "Icons/ItemsGenerated/Voice_Stone_Topaz.png",
   "Parent": "Voice_Stone_Emerald",
-  "Texture": "Resources/VoiceStone/Voice_Stone_Topaz.png",
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Resources/VoiceStone/Voice_Stone.blockymodel",
+    "CustomModelScale": 0.9,
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/VoiceStone/Voice_Stone_Topaz.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "Flags": {},
+    "VariantRotation": "DoublePipe",
+    "RandomRotation": "YawStep90",
+    "BlockSoundSetId": "Crystal",
+    "PhysicalMaterialId": "Stone"
+  },
   "Quality": "Rare",
   "IconProperties": {
     "Scale": 0.58823,
