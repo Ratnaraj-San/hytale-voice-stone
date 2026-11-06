@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.voice;
 
 import java.time.Instant;
 import java.util.Map;

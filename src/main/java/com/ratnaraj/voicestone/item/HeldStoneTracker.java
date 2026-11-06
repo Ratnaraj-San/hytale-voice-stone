@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.item;
 
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -16,11 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * Tracks the single Voice Stone each player effectively holds and logs every
- * held/released transition. Both hands can carry a Voice Stone at the same
- * time (hotbar = primary hand, utility slot = secondary hand), but only one
- * stone counts as held: the primary-hand stone wins over the secondary-hand
- * one, mirroring the game's own item-in-hand semantics.
+ * Tracks the single Voice Stone each player effectively holds and logs
+ * every held/released transition. Both hands can carry a Voice Stone at
+ * the same time (hotbar = primary hand, utility slot = secondary hand),
+ * but only one stone counts as held: the primary-hand stone wins,
+ * mirroring the game's item-in-hand semantics.
  */
 public final class HeldStoneTracker {
 
@@ -38,16 +38,12 @@ public final class HeldStoneTracker {
         this.logger = logger;
     }
 
-    /**
-     * Forgets any tracked state for a player without logging, so a fresh
-     * reading (e.g. at connect) is diffed against an empty state.
-     */
+    /** Forgets any tracked state, so the next reading is diffed against an empty state (e.g. at connect). */
     public void reset(UUID uuid) {
         heldByPlayer.remove(uuid);
         playerRefs.remove(uuid);
     }
 
-    /** Clears a player's state on disconnect, logging any stone they were holding. */
     public void onDisconnect(PlayerRef player) {
         HeldStone previous = heldByPlayer.remove(player.getUuid());
 
@@ -58,7 +54,6 @@ public final class HeldStoneTracker {
         }
     }
 
-    /** Recomputes the held stone of a player. */
     public void update(PlayerRef player) {
         playerRefs.put(player.getUuid(), player);
 
@@ -104,13 +99,11 @@ public final class HeldStoneTracker {
     }
 
     /**
-     * Returns the Voice Stone the player currently holds, or null when they
-     * hold none. Re-reads the inventory sections on every call instead of
-     * serving a cached stack: link toggles replace the stack wholesale
-     * (withMetadata returns a new stack), and this is also called from the
-     * voice module's interceptor thread — a fresh read is always current
-     * and never shared. The primary-hand stone wins over the secondary-hand
-     * one, mirroring the game's item-in-hand semantics.
+     * Returns the Voice Stone the player currently holds, or null when
+     * they hold none. Re-reads the inventory sections on every call
+     * instead of serving a cached stack: link toggles replace the stack
+     * wholesale, and this is also read from the voice module's
+     * interceptor thread — a fresh read is always current.
      */
     public ItemStack getHeldStone(UUID uuid) {
         PlayerRef player = playerRefs.get(uuid);
@@ -134,10 +127,10 @@ public final class HeldStoneTracker {
      * Replaces the player's held Voice Stone with the given stack, in
      * whichever hand holds it (the same hotbar-first priority as
      * getHeldStone). withMetadata never mutates in place: the modified
-     * stack must replace the old one in its slot, or the link is lost.
+     * stack must replace the old one in its slot, or the change is lost.
      *
      * @return false when no Voice Stone is held — the caller drops the
-     * toggle rather than writing to a stale slot
+     * change rather than writing to a stale slot
      */
     public boolean writeHeldStone(PlayerRef player, ItemStack newStack) {
         ActiveSlotInventoryComponent section = heldStoneSection(player);
@@ -150,10 +143,7 @@ public final class HeldStoneTracker {
         return true;
     }
 
-    /**
-     * The inventory section whose active item is a Voice Stone, hotbar
-     * (primary hand) first — the same priority getHeldStone applies.
-     */
+    /** The section whose active item is a Voice Stone, hotbar (primary hand) first. */
     private ActiveSlotInventoryComponent heldStoneSection(PlayerRef player) {
         InventoryComponent.Hotbar hotbar =
                 player.getComponentConcurrent(InventoryComponent.Hotbar.getComponentType());
@@ -168,10 +158,6 @@ public final class HeldStoneTracker {
         return VoiceStoneItems.isVoiceStone(utility.getActiveItem()) ? utility : null;
     }
 
-    /**
-     * The active item of one hand's section, whatever it is — the Voice
-     * Stone filtering happens at the call sites.
-     */
     private <T extends ActiveSlotInventoryComponent> ItemStack activeStone(
             PlayerRef player, ComponentType<EntityStore, T> sectionType) {
         T section = player.getComponentConcurrent(sectionType);

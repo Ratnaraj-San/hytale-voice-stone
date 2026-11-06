@@ -6,6 +6,14 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.ratnaraj.voicestone.gesture.LinkGestureSystem;
+import com.ratnaraj.voicestone.item.ActiveSlotChangedSystem;
+import com.ratnaraj.voicestone.item.HeldStoneTracker;
+import com.ratnaraj.voicestone.item.InventoryChangedSystem;
+import com.ratnaraj.voicestone.mana.ManaDrainSystem;
+import com.ratnaraj.voicestone.voice.BroadcastRouter;
+import com.ratnaraj.voicestone.voice.SpeakingTracker;
+import com.ratnaraj.voicestone.voice.VoiceFrameInterceptor;
 
 import javax.annotation.Nonnull;
 import java.util.logging.Level;
@@ -27,14 +35,13 @@ public class VoiceStone extends JavaPlugin {
 
     @Override
     protected void start() {
+        VoiceStoneConfig.load(getLogger(), getDataDirectory());
+
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
         SpeakingTracker speakingTracker = new SpeakingTracker();
 
         getEntityStoreRegistry().registerSystem(new ActiveSlotChangedSystem(heldStoneTracker));
         getEntityStoreRegistry().registerSystem(new InventoryChangedSystem(heldStoneTracker));
-        getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker));
-
-        getCommandRegistry().registerCommand(new VoiceStoneCommand(getLogger(), heldStoneTracker));
 
         VoiceModule voiceModule = VoiceModule.get();
 
@@ -43,14 +50,16 @@ public class VoiceStone extends JavaPlugin {
             return;
         }
 
-        ManaDrainSystem manaDrainSystem = new ManaDrainSystem(getLogger(), heldStoneTracker, voiceModule, speakingTracker);
+        ManaDrainSystem manaDrainSystem = new ManaDrainSystem(heldStoneTracker, voiceModule, speakingTracker);
 
         registerEvents(heldStoneTracker, manaDrainSystem);
 
         BroadcastRouter broadcastRouter = new BroadcastRouter(voiceModule, heldStoneTracker);
-        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(new VoiceFrameInterceptor(getLogger(), broadcastRouter, speakingTracker));
+        voiceInterceptorRegistration = voiceModule.addPlayerVoiceInterceptor(
+                new VoiceFrameInterceptor(broadcastRouter, speakingTracker)
+        );
 
-        getEntityStoreRegistry().registerSystem(new LinkChainSystem(getLogger(), heldStoneTracker, voiceModule));
+        getEntityStoreRegistry().registerSystem(new LinkGestureSystem(getLogger(), heldStoneTracker, voiceModule));
         getEntityStoreRegistry().registerSystem(manaDrainSystem);
 
         getLogger().at(Level.INFO).log("[VoiceStone] Plugin enabled!");
