@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.gesture;
 
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -6,6 +6,10 @@ import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.ratnaraj.voicestone.item.HeldStoneTracker;
+import com.ratnaraj.voicestone.mana.ManaCosts;
+import com.ratnaraj.voicestone.item.StoneLinks;
+import com.ratnaraj.voicestone.VoiceStoneConfig;
 
 import java.util.logging.Level;
 

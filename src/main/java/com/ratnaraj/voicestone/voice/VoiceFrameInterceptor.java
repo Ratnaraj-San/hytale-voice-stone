@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.voice;
 
 import com.hypixel.hytale.server.core.modules.voice.PlayerVoiceFrame;
 import com.hypixel.hytale.server.core.modules.voice.PlayerVoiceInterceptor;

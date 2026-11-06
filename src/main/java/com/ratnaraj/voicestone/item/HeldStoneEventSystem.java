@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.item;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -6,16 +6,13 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EcsEvent;
 import com.hypixel.hytale.component.system.EntityEventSystem;
-import com.hypixel.hytale.server.core.event.events.ecs.InventoryChangeEvent;
-import com.hypixel.hytale.server.core.event.events.ecs.InventorySetActiveSlotEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * ECS event systems that watch player inventories and feed the held-stone
- * tracker. Active slot selection and inventory content changes together cover
- * every way a Voice Stone can start or stop being the held item.
+ * Shared base of the two inventory-watching systems: feeds the held-stone
+ * tracker whatever inventory event fired for the player.
  */
 abstract class HeldStoneEventSystem<Event extends EcsEvent> extends EntityEventSystem<EntityStore, Event> {
 
@@ -38,19 +35,5 @@ abstract class HeldStoneEventSystem<Event extends EcsEvent> extends EntityEventS
         if (player != null) {
             tracker.update(player);
         }
-    }
-}
-
-final class ActiveSlotChangedSystem extends HeldStoneEventSystem<InventorySetActiveSlotEvent> {
-
-    ActiveSlotChangedSystem(HeldStoneTracker tracker) {
-        super(InventorySetActiveSlotEvent.class, tracker);
-    }
-}
-
-final class InventoryChangedSystem extends HeldStoneEventSystem<InventoryChangeEvent> {
-
-    InventoryChangedSystem(HeldStoneTracker tracker) {
-        super(InventoryChangeEvent.class, tracker);
     }
 }

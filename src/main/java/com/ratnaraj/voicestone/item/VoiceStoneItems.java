@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.item;
 
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 

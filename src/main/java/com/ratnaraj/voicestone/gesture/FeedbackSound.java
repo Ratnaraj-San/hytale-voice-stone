@@ -1,4 +1,4 @@
-package com.ratnaraj.voicestone;
+package com.ratnaraj.voicestone.gesture;
 
 import com.hypixel.hytale.common.util.AudioUtil;
 import com.hypixel.hytale.component.Store;
