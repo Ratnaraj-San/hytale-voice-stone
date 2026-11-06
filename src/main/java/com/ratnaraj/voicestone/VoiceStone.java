@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.ratnaraj.voicestone.gesture.LinkGestureSystem;
+import com.ratnaraj.voicestone.item.ArcaneBenchTab;
 import com.ratnaraj.voicestone.item.ActiveSlotChangedSystem;
 import com.ratnaraj.voicestone.item.HeldStoneTracker;
 import com.ratnaraj.voicestone.item.InventoryChangedSystem;
@@ -36,6 +37,8 @@ public class VoiceStone extends JavaPlugin {
     @Override
     protected void start() {
         VoiceStoneConfig.load(getLogger(), getDataDirectory());
+
+        ArcaneBenchTab.registerTab(getLogger(), getDataDirectory(), getManifest());
 
         HeldStoneTracker heldStoneTracker = new HeldStoneTracker(getLogger());
         SpeakingTracker speakingTracker = new SpeakingTracker();
