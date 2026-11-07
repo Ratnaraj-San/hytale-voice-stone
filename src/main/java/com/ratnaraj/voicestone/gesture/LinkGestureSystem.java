@@ -8,7 +8,9 @@ import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.protocol.BlockPosition;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.InteractionChain;
 import com.hypixel.hytale.server.core.entity.InteractionManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -17,8 +19,11 @@ import com.hypixel.hytale.server.core.modules.interaction.InteractionModule;
 import com.hypixel.hytale.server.core.modules.voice.VoiceModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.ratnaraj.voicestone.item.HeldStoneTracker;
+import com.ratnaraj.voicestone.item.VoiceStoneItems;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
@@ -89,23 +94,52 @@ public final class LinkGestureSystem extends EntityTickingSystem<EntityStore> {
             if (chain.getType() == InteractionType.Secondary
                     && chain.getRootInteraction() != null
                     && LINK_ROOT_ID.equals(chain.getRootInteraction().getId())) {
-                handleGesture(player, stone, store);
+                handleGesture(player, stone, store, chain);
             }
         }
     }
 
-    private void handleGesture(PlayerRef holder, ItemStack stone, Store<EntityStore> store) {
+    private void handleGesture(PlayerRef holder, ItemStack stone, Store<EntityStore> store, InteractionChain chain) {
         if (!LinkToggles.isCrouching(holder)) {
             return;
         }
 
         PlayerRef target = aimedPlayerWithinReach(holder);
 
-        if (target == null) {
+        if (target != null) {
+            LinkToggles.toggle(logger, tracker, holder, target, stone, store);
             return;
         }
 
-        LinkToggles.toggle(logger, tracker, holder, target, stone, store);
+        String blockId = getBlockId(chain.getContext().getTargetBlockRaw(), holder);
+
+        if (blockId != null && isMatchingGem(stone.getItemId(), blockId)) {
+            LinkToggles.clearAll(logger, tracker, holder, stone, store);
+        }
+    }
+
+    private String getBlockId(BlockPosition blockPos, PlayerRef holder) {
+        if (blockPos == null) { return null; }
+
+        if (holder.getWorldUuid() == null) { return null; }
+
+        World world = Universe.get().getWorld(holder.getWorldUuid());
+
+        if (world == null) { return null; }
+
+        int block = new SectionReader(world.getChunkStore()).getBlock(blockPos.x, blockPos.y, blockPos.z);
+
+        BlockType type = BlockType.getAssetMap().getAsset(block);
+
+        if (type == null) { return null; }
+
+        return type.getId();
+    }
+
+    private boolean isMatchingGem(String stoneId, String blockId) {
+        String gemId = VoiceStoneItems.getGemIdFor(stoneId);
+
+        return gemId != null && gemId.equals(blockId);
     }
 
     /**

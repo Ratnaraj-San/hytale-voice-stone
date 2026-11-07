@@ -46,6 +46,11 @@ The same gesture on a linked player unlinks them.
 - A linked stone **changes appearance**, and its **tooltip lists who** it is linked to.
 - The stone is a loudspeaker, not a whisper: anyone standing next to a playing stone overhears everything.
 
+### Clear all links
+
+Hold the stone, look at a **gemstone of the same color** placed in the world
+(an Emerald stone clears on an Emerald gemstone), then **crouch + right-click**.
+
 ### Private networks
 
 When two stones link to each other, other players can no longer hear the pair through any stone. People nearby, in person or next to the stones themselves, still can.

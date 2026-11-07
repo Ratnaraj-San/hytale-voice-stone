@@ -107,6 +107,13 @@ public final class StoneLinks {
         return withVariant(withTooltip(stackWithName));
     }
 
+    public static ItemStack clear(ItemStack stack) {
+        ItemStack cleared = withLinks(stack, List.of());
+        ItemStack unnamed = cleared.withMetadata(LINK_NAMES_KEY, null);
+
+        return withVariant(withTooltip(unnamed));
+    }
+
     private static ItemStack withLinks(ItemStack stack, List<UUID> links) {
         if (links == null || links.isEmpty()) {
             return stack.withMetadata(LINKS_KEY, null);
