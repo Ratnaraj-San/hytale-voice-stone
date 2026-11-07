@@ -1,0 +1,12 @@
+benchCategories.voiceStones = 传声石
+
+items.Voice_Stone_Emerald.name = 传声石（绿宝石）
+items.Voice_Stone_Emerald.description = 在携石者之间传递声音。
+items.Voice_Stone_Zephyr.name = 传声石（和风石）
+items.Voice_Stone_Sapphire.name = 传声石（蓝宝石）
+items.Voice_Stone_Ruby.name = 传声石（红宝石）
+items.Voice_Stone_Diamond.name = 传声石（钻石）
+items.Voice_Stone_Topaz.name = 传声石（黄宝石）
+items.Voice_Stone_Void.name = 传声石（虚空石）
+
+voicestone.tooltip.links = \n已链接：{names}

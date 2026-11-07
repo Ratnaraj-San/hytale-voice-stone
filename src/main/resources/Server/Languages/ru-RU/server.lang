@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Камни голоса
+
+items.Voice_Stone_Emerald.name = Камень голоса: Изумруд
+items.Voice_Stone_Emerald.description = Переносит голоса между держателями камней.
+items.Voice_Stone_Zephyr.name = Камень голоса: Зефирит
+items.Voice_Stone_Sapphire.name = Камень голоса: Сапфир
+items.Voice_Stone_Ruby.name = Камень голоса: Рубин
+items.Voice_Stone_Diamond.name = Камень голоса: Алмаз
+items.Voice_Stone_Topaz.name = Камень голоса: Топаз
+items.Voice_Stone_Void.name = Камень голоса: Пустота
+
+voicestone.tooltip.links = \nСвязан с {names}
