@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Ses Taşları
+
+items.Voice_Stone_Emerald.name = Zümrüt Ses Taşı
+items.Voice_Stone_Emerald.description = Taş taşıyanlar arasında sesleri iletir.
+items.Voice_Stone_Zephyr.name = Zefir Ses Taşı
+items.Voice_Stone_Sapphire.name = Safir Ses Taşı
+items.Voice_Stone_Ruby.name = Yakut Ses Taşı
+items.Voice_Stone_Diamond.name = Elmas Ses Taşı
+items.Voice_Stone_Topaz.name = Topaz Ses Taşı
+items.Voice_Stone_Void.name = Hiçlik Ses Taşı
+
+voicestone.tooltip.links = \nŞunlara bağlı: {names}

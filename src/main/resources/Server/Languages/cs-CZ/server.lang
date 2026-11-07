@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Kameny hlasů
+
+items.Voice_Stone_Emerald.name = Kámen hlasů (Smaragd)
+items.Voice_Stone_Emerald.description = Přenáší hlasy mezi nositeli kamenů.
+items.Voice_Stone_Zephyr.name = Kámen hlasů (Zefír)
+items.Voice_Stone_Sapphire.name = Kámen hlasů (Safír)
+items.Voice_Stone_Ruby.name = Kámen hlasů (Rubín)
+items.Voice_Stone_Diamond.name = Kámen hlasů (Diamant)
+items.Voice_Stone_Topaz.name = Kámen hlasů (Topas)
+items.Voice_Stone_Void.name = Kámen hlasů (Prázdno)
+
+voicestone.tooltip.links = \nSpojen s {names}

@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Röststenar
+
+items.Voice_Stone_Emerald.name = Röststen (Smaragd)
+items.Voice_Stone_Emerald.description = Bär röster mellan stenbärare.
+items.Voice_Stone_Zephyr.name = Röststen (Zephyr)
+items.Voice_Stone_Sapphire.name = Röststen (Safir)
+items.Voice_Stone_Ruby.name = Röststen (Rubin)
+items.Voice_Stone_Diamond.name = Röststen (Diamant)
+items.Voice_Stone_Topaz.name = Röststen (Topas)
+items.Voice_Stone_Void.name = Röststen (Void)
+
+voicestone.tooltip.links = \nLänkad till {names}

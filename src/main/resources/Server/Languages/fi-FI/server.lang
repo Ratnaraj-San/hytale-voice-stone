@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Äänikivet
+
+items.Voice_Stone_Emerald.name = Äänikivi (Smaragdi)
+items.Voice_Stone_Emerald.description = Välittää ääniä kiven kantajien välillä.
+items.Voice_Stone_Zephyr.name = Äänikivi (Zefyr)
+items.Voice_Stone_Sapphire.name = Äänikivi (Safiiri)
+items.Voice_Stone_Ruby.name = Äänikivi (Rubiini)
+items.Voice_Stone_Diamond.name = Äänikivi (Timantti)
+items.Voice_Stone_Topaz.name = Äänikivi (Topaasi)
+items.Voice_Stone_Void.name = Äänikivi (Tyhjyys)
+
+voicestone.tooltip.links = \nYhdistetty: {names}
