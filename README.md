@@ -23,7 +23,7 @@ There are also Diamond, Topaz and Void variants, but since the gemstones cannot 
 
 ## Using your stone
 
-Put a Voice Stone in your **hand** — that is all. While holding the stone:
+Put a Voice Stone in your hand (hotbar or utility slot) — that is all. While holding the stone:
 
 - You hear every other stone-carrier through your own stone, even on the other side of the world or in another world.
 - They hear you the same way.
