@@ -36,6 +36,14 @@
     "Primary": "Root_Unarmed_Attack_Swing_Left",
     "Secondary": "Root_VoiceStone_Link"
   },
+  "InteractionConfig": {
+    "Priorities": {
+      "Secondary": {
+        "MainHand": 1,
+        "OffHand": -1
+      }
+    }
+  },
   "Quality": "Rare",
   "IconProperties": {
     "Scale": 0.58823,
