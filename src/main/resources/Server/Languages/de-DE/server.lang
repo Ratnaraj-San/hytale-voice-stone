@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Stimmensteine
+
+items.Voice_Stone_Emerald.name = Stimmenstein (Smaragd)
+items.Voice_Stone_Emerald.description = Überträgt Stimmen zwischen Steinträgern.
+items.Voice_Stone_Zephyr.name = Stimmenstein (Zephyr)
+items.Voice_Stone_Sapphire.name = Stimmenstein (Saphir)
+items.Voice_Stone_Ruby.name = Stimmenstein (Rubin)
+items.Voice_Stone_Diamond.name = Stimmenstein (Diamant)
+items.Voice_Stone_Topaz.name = Stimmenstein (Topas)
+items.Voice_Stone_Void.name = Stimmenstein (Leere)
+
+voicestone.tooltip.links = \nVerbunden mit {names}

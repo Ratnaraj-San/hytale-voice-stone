@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Pietre ale vocilor
+
+items.Voice_Stone_Emerald.name = Piatra vocilor (Smarald)
+items.Voice_Stone_Emerald.description = Transmite voci între purtătorii de pietre.
+items.Voice_Stone_Zephyr.name = Piatra vocilor (Zefir)
+items.Voice_Stone_Sapphire.name = Piatra vocilor (Safir)
+items.Voice_Stone_Ruby.name = Piatra vocilor (Rubin)
+items.Voice_Stone_Diamond.name = Piatra vocilor (Diamant)
+items.Voice_Stone_Topaz.name = Piatra vocilor (Topaz)
+items.Voice_Stone_Void.name = Piatra vocilor (Vid)
+
+voicestone.tooltip.links = \nLegată de {names}

@@ -65,4 +65,28 @@ public final class LinkToggles {
             );
         }
     }
+
+    public static void clearAll(HytaleLogger logger,
+                                HeldStoneTracker tracker,
+                                PlayerRef holder,
+                                ItemStack stone,
+                                Store<EntityStore> store)
+    {
+        if (StoneLinks.get(stone).isEmpty()) {
+            FeedbackSound.play(holder, VoiceStoneConfig.getUnlinkSoundEvent(), store);
+
+            return;
+        }
+
+        ItemStack cleared = StoneLinks.clear(stone);
+
+        FeedbackSound.play(holder, VoiceStoneConfig.getUnlinkSoundEvent(), store);
+
+        if (!tracker.writeHeldStone(holder, cleared)) {
+            logger.at(Level.WARNING).log(
+                    "[VoiceStone] %s's stone vanished between read and write, link toggle dropped",
+                    holder.getUsername()
+            );
+        }
+    }
 }

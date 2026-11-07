@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Pedras de voz
+
+items.Voice_Stone_Emerald.name = Pedra de voz de esmeralda
+items.Voice_Stone_Emerald.description = Carrega vozes entre portadores de pedra.
+items.Voice_Stone_Zephyr.name = Pedra de voz de zéfiro
+items.Voice_Stone_Sapphire.name = Pedra de voz de safira
+items.Voice_Stone_Ruby.name = Pedra de voz de rubi
+items.Voice_Stone_Diamond.name = Pedra de voz de diamante
+items.Voice_Stone_Topaz.name = Pedra de voz de topázio
+items.Voice_Stone_Void.name = Pedra de voz do Vazio
+
+voicestone.tooltip.links = \nVinculada a {names}

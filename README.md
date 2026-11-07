@@ -46,6 +46,11 @@ The same gesture on a linked player unlinks them.
 - A linked stone **changes appearance**, and its **tooltip lists who** it is linked to.
 - The stone is a loudspeaker, not a whisper: anyone standing next to a playing stone overhears everything.
 
+### Clear all links
+
+Hold the stone, look at a **gemstone of the same color** placed in the world
+(an Emerald stone clears on an Emerald gemstone), then **crouch + right-click**.
+
 ### Private networks
 
 When two stones link to each other, other players can no longer hear the pair through any stone. People nearby, in person or next to the stones themselves, still can.
@@ -56,9 +61,23 @@ When two stones link to each other, other players can no longer hear the pair th
 
 The Voice Stone feeds on your mana:
 
-- Holding the stone while **talking** drains a little mana every second. There is no drain if you are muted mic or your voice chat is off.
+- Holding the stone while **talking** drains a little mana every second. There is no drain if your mic is muted or your voice chat is off.
 - **Linking or unlinking** a player costs mana up front. If you don't have enough mana, the stone refuses.
 
 ### Out of mana
 
 Your voice stops passing through any stone if your mana reaches 0. You will then have to wait for 3 seconds before it regenerates, but your stone keeps hearing for you: an empty tank seals the mouth, not the ears.
+
+---
+
+## Translations
+
+The Voice Stone is translated in every language the game currently supports:
+
+Chinese (Simplified), English, French, Portuguese (Brazil), Russian, Spanish, Ukrainian.
+
+Ten more languages the game has not added yet are translated too:
+
+Czech, Danish, Dutch, Finnish, German, Italian, Polish, Portuguese (Portugal), Romanian, Swedish, Turkish.
+
+Most translations were written without native review and may contain errors. If you spot one, please report it — it will be fixed in the next update.

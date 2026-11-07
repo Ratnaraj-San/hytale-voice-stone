@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Stemmesten
+
+items.Voice_Stone_Emerald.name = Stemmesten (Smaragd)
+items.Voice_Stone_Emerald.description = Bærer stemmer mellem stenbærere.
+items.Voice_Stone_Zephyr.name = Stemmesten (Zefyr)
+items.Voice_Stone_Sapphire.name = Stemmesten (Safir)
+items.Voice_Stone_Ruby.name = Stemmesten (Rubin)
+items.Voice_Stone_Diamond.name = Stemmesten (Diamant)
+items.Voice_Stone_Topaz.name = Stemmesten (Topas)
+items.Voice_Stone_Void.name = Stemmesten (Void)
+
+voicestone.tooltip.links = \nForbundet med {names}

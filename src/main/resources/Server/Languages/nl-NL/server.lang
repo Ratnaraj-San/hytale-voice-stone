@@ -1,0 +1,12 @@
+benchCategories.voiceStones = Stemstenen
+
+items.Voice_Stone_Emerald.name = Stemsteen (Smaragd)
+items.Voice_Stone_Emerald.description = Draagt stemmen over tussen steendragers.
+items.Voice_Stone_Zephyr.name = Stemsteen (Zephyr)
+items.Voice_Stone_Sapphire.name = Stemsteen (Saffier)
+items.Voice_Stone_Ruby.name = Stemsteen (Robijn)
+items.Voice_Stone_Diamond.name = Stemsteen (Diamant)
+items.Voice_Stone_Topaz.name = Stemsteen (Topaas)
+items.Voice_Stone_Void.name = Stemsteen (Void)
+
+voicestone.tooltip.links = \nVerbonden met {names}
